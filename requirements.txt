@@ -1,0 +1,16 @@
+# paper_agent requirements (venv at /data1/paper_agent_venv, code here)
+# torch CUDA 121 first:
+# /data1/paper_agent_venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cu121
+transformers>=4.44
+peft>=0.12
+trl>=0.9
+bitsandbytes>=0.43
+accelerate>=0.33
+datasets>=2.20
+sentence-transformers>=3.0
+faiss-cpu>=1.8
+arxiv>=2.1
+numpy<2.0
+scipy
+scikit-learn
+tqdm

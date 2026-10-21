@@ -1,0 +1,8 @@
+{"id": "t0", "title": "Agent Laboratory: Using LLM Agents as Research Assistants", "pred_ok": true}
+{"id": "t1", "title": "LLM agent evaluation", "pred_ok": false}
+{"id": "t2", "title": "Can LLMs facilitate interpretation of pre-trained language models?", "pred_ok": true}
+{"id": "t3", "title": "Cue-CoT: Chain-of-thought Prompting for Responding to In-depth Dialogue Questions", "pred_ok": true}
+{"id": "t4", "title": "Nonexistent paper title xyz 12345", "pred_ok": false}
+{"id": "t5", "title": "Plan-Then-Execute: An Empirical Study of User Trust", "pred_ok": true}
+{"id": "t6", "title": "MarketSenseAI 2.0: Enhancing Stock Analysis through LLM Agents", "pred_ok": false}
+{"id": "t7", "title": "PlotEdit: Natural Language-Driven Accessible Chart Editing", "pred_ok": true}

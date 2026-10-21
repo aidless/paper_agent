@@ -1,0 +1,206 @@
+{
+  "base": {
+    "val_nll_60": 4.4904,
+    "gen": {
+      "tag": 0.0,
+      "evd": 0.25,
+      "d2": 0.7239,
+      "loop": 2,
+      "len": 392
+    },
+    "gen_detail": [
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 0.7521,
+        "loop": false,
+        "len": 352
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 0.7363,
+        "loop": false,
+        "len": 403
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 0.7259,
+        "loop": false,
+        "len": 395
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 0.6146,
+        "loop": true,
+        "len": 507
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 0.7398,
+        "loop": false,
+        "len": 343
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 0.6817,
+        "loop": true,
+        "len": 400
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "d2": 0.7982,
+        "loop": false,
+        "len": 333
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "d2": 0.7426,
+        "loop": false,
+        "len": 405
+      }
+    ]
+  },
+  "ckpt68": {
+    "val_nll_60": 1.103,
+    "gen": {
+      "tag": 0.0,
+      "evd": 0.5,
+      "d2": 0.9361,
+      "loop": 1,
+      "len": 83
+    },
+    "gen_detail": [
+      {
+        "tag": false,
+        "evd": true,
+        "d2": 0.6504,
+        "loop": true,
+        "len": 350
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 1.0,
+        "loop": false,
+        "len": 15
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 1.0,
+        "loop": false,
+        "len": 15
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "d2": 0.9853,
+        "loop": false,
+        "len": 69
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 1.0,
+        "loop": false,
+        "len": 25
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 1.0,
+        "loop": false,
+        "len": 15
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "d2": 0.9667,
+        "loop": false,
+        "len": 61
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "d2": 0.886,
+        "loop": false,
+        "len": 115
+      }
+    ]
+  },
+  "ckpt270": {
+    "val_nll_60": 1.103,
+    "gen": {
+      "tag": 0.0,
+      "evd": 0.5,
+      "d2": 0.9361,
+      "loop": 1,
+      "len": 83
+    },
+    "gen_detail": [
+      {
+        "tag": false,
+        "evd": true,
+        "d2": 0.6504,
+        "loop": true,
+        "len": 350
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 1.0,
+        "loop": false,
+        "len": 15
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 1.0,
+        "loop": false,
+        "len": 15
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "d2": 0.9853,
+        "loop": false,
+        "len": 69
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 1.0,
+        "loop": false,
+        "len": 25
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "d2": 1.0,
+        "loop": false,
+        "len": 15
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "d2": 0.9667,
+        "loop": false,
+        "len": 61
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "d2": 0.886,
+        "loop": false,
+        "len": 115
+      }
+    ]
+  }
+}

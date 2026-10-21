@@ -1,0 +1,86 @@
+[
+  {
+    "id": "2607.11149",
+    "title": "The Hidden Footprint: Making Storage a First-Class Metric for LLM Agent Evaluation",
+    "authors": "Chenglin Yu,Hongquan Gui,Ying Yu,Tao Zeng,Ming Li",
+    "published": "2026-07-13T06:44:33Z",
+    "url": "https://arxiv.org/abs/2607.11149",
+    "source": "arxiv",
+    "score": 0.8
+  },
+  {
+    "id": "pes2o:2510.01295v1",
+    "title": "The Social Laboratory: A Psychometric Framework for Multi-Agent LLM Evaluation",
+    "authors": "Zarreen Reza",
+    "published": "",
+    "source": "pes2o-vector",
+    "score": 0.7604
+  },
+  {
+    "id": "pes2o:2507.21028",
+    "title": "Multi-Agent-as-Judge: Aligning LLM-Agent-Based Automated Evaluation with Multi-Dimensional Human Evaluation",
+    "authors": "[\"Jiaju Chen\", \"Yuxuan Lu\", \"Xiaojie Wang\", \"Huimin Zeng\", \"Jing Huang\", \"Jiri Gesi\", \"Ying Xu\", \"Bingsheng Yao\", \"Dakuo Wang\"]",
+    "published": "2025",
+    "source": "pes2o-vector",
+    "score": 0.7602
+  },
+  {
+    "id": "pes2o:2602.03128v1",
+    "title": "Understanding Multi-Agent LLM Frameworks: A Unified Benchmark and Experimental Analysis",
+    "authors": "Abdelghny Orogat; Ana Rostam; Essam Mansour",
+    "published": "",
+    "source": "pes2o-vector",
+    "score": 0.7347
+  },
+  {
+    "id": "pes2o:2508.02994",
+    "title": "When AIs Judge AIs: The Rise of Agent-as-a-Judge Evaluation for LLMs",
+    "authors": "[\"Fangyi Yu\"]",
+    "published": "2025",
+    "source": "pes2o-vector",
+    "score": 0.7074
+  },
+  {
+    "id": "pes2o:2504.17087v1",
+    "title": "Leveraging LLMs as Meta-Judges: A Multi-Agent Framework for Evaluating LLM Judgments",
+    "authors": "Yuran Li; Jama Hussein Mohamud; Chongren Sun; Di Wu; Benoit Boulet",
+    "published": "",
+    "source": "pes2o-vector",
+    "score": 0.6977
+  },
+  {
+    "id": "pes2o:2605.21404v1",
+    "title": "What Twelve LLM Agent Benchmark Papers Disclose About Themselves: A Pilot Audit and an Open Scoring Schema",
+    "authors": "Mahdi Naser Moghadasi; Faezeh Ghaderi",
+    "published": "",
+    "source": "pes2o-vector",
+    "score": 0.6865
+  },
+  {
+    "id": "2608.15591",
+    "title": "Agent Gym: A Framework for Continuous Evaluation and Evolution of LLM Agents Through Human-in-the-Loop Feedback",
+    "authors": "Pouya Ghiasnezhad Omran,Michael Zimmermann,Duncan Cambridge,Ashmita Kapoor,Tanya Dixit",
+    "published": "2026-08-16T07:27:26Z",
+    "url": "https://arxiv.org/abs/2608.15591",
+    "source": "arxiv-vector",
+    "score": 0.5904
+  },
+  {
+    "id": "2607.06624",
+    "title": "AgentLens: Production-Assessed Trajectory Reviews for Coding Agent Evaluation",
+    "authors": "Andrey Podivilov,Vadim Lomshakov,Sergey Savin,Matvei Startsev,Roman Pozharskiy,Maksim Parshin,Sergey Nikolenko",
+    "published": "2026-07-07T11:27:43Z",
+    "url": "https://arxiv.org/abs/2607.06624",
+    "source": "arxiv-vector",
+    "score": 0.5842
+  },
+  {
+    "id": "2609.02246",
+    "title": "LLM-as-a-Judge Is Not an Oracle: Why Self-Improving Agents Need Deterministic Guardrails",
+    "authors": "Vansh Wahi",
+    "published": "2026-09-02T07:54:23Z",
+    "url": "https://arxiv.org/abs/2609.02246",
+    "source": "arxiv-vector",
+    "score": 0.5774
+  }
+]

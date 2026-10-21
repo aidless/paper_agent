@@ -1,0 +1,207 @@
+{
+ "base": {
+  "val_nll_60": 3.9983,
+  "gen": {
+   "tag": 0.0,
+   "evd": 0.25,
+   "d2": 0.7356,
+   "loop": 2,
+   "len": 397
+  },
+  "gen_detail": [
+   {
+    "tag": false,
+    "evd": false,
+    "d2": 0.7658,
+    "loop": false,
+    "len": 428
+   },
+   {
+    "tag": false,
+    "evd": false,
+    "d2": 0.7599,
+    "loop": false,
+    "len": 405
+   },
+   {
+    "tag": false,
+    "evd": false,
+    "d2": 0.7259,
+    "loop": false,
+    "len": 395
+   },
+   {
+    "tag": false,
+    "evd": false,
+    "d2": 0.6545,
+    "loop": true,
+    "len": 467
+   },
+   {
+    "tag": false,
+    "evd": false,
+    "d2": 0.7429,
+    "loop": false,
+    "len": 351
+   },
+   {
+    "tag": false,
+    "evd": false,
+    "d2": 0.7007,
+    "loop": true,
+    "len": 402
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.8037,
+    "loop": false,
+    "len": 327
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.7315,
+    "loop": false,
+    "len": 407
+   }
+  ]
+ },
+ "ckpt136": {
+  "val_nll_60": 0.4619,
+  "gen": {
+   "tag": 0.0,
+   "evd": 1.0,
+   "d2": 0.727,
+   "loop": 3,
+   "len": 375
+  },
+  "gen_detail": [
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.7507,
+    "loop": false,
+    "len": 370
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.8479,
+    "loop": false,
+    "len": 264
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.6818,
+    "loop": true,
+    "len": 419
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.8154,
+    "loop": true,
+    "len": 261
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.8159,
+    "loop": false,
+    "len": 278
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.375,
+    "loop": true,
+    "len": 825
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.7917,
+    "loop": false,
+    "len": 313
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.738,
+    "loop": false,
+    "len": 272
+   }
+  ]
+ },
+ "ckpt_final": {
+  "val_nll_60": 0.4619,
+  "gen": {
+   "tag": 0.0,
+   "evd": 1.0,
+   "d2": 0.727,
+   "loop": 3,
+   "len": 375
+  },
+  "gen_detail": [
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.7507,
+    "loop": false,
+    "len": 370
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.8479,
+    "loop": false,
+    "len": 264
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.6818,
+    "loop": true,
+    "len": 419
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.8154,
+    "loop": true,
+    "len": 261
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.8159,
+    "loop": false,
+    "len": 278
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.375,
+    "loop": true,
+    "len": 825
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.7917,
+    "loop": false,
+    "len": 313
+   },
+   {
+    "tag": false,
+    "evd": true,
+    "d2": 0.738,
+    "loop": false,
+    "len": 272
+   }
+  ]
+ },
+ "_note": "keys renamed from ckpt68/ckpt270 for honesty: AD68=checkpoint-136, AD270=p1v2-final. values untouched."
+}

@@ -1,0 +1,59 @@
+{
+  "draft": "【草稿片段】任务: LLM agent evaluation GAP与基线\n【检索】召回5条(peS2o+arXiv增量)\n[1] The Social Laboratory: A Psychometric Framework for Multi-Agent LLM Evaluation (pes2o-vector)\n[2] Multi-Agent-as-Judge: Aligning LLM-Agent-Based Automated Evaluation with Multi-Dimensional Human Evaluation (pes2o-vector)\n[3] Doing What They Say, Not What They Reason: Locating the Faithfulness Gap in LLM Agents (pes2o-vector)\n【ledger】每个数字需绑定evidence_refs, Abstract最后写, TMLR匿名.\n\n【纯检索模式】\n",
+  "steps": [
+    {
+      "step": 1,
+      "tool": "fused_search",
+      "n_hits": 5
+    },
+    {
+      "step": 2,
+      "tool": "model",
+      "skipped": "no-model flag"
+    }
+  ],
+  "hits": [
+    {
+      "id": "pes2o:2510.01295v1",
+      "title": "The Social Laboratory: A Psychometric Framework for Multi-Agent LLM Evaluation",
+      "authors": "Zarreen Reza",
+      "published": "",
+      "source": "pes2o-vector",
+      "score": 0.6485
+    },
+    {
+      "id": "pes2o:2507.21028v1",
+      "title": "Multi-Agent-as-Judge: Aligning LLM-Agent-Based Automated Evaluation with Multi-Dimensional Human Evaluation",
+      "authors": "Jiaju Chen; Yuxuan Lu; Xiaojie Wang; Huimin Zeng; Jing Huang; Jiri Gesi; Ying Xu; Bingsheng Yao; Dakuo Wang",
+      "published": "",
+      "source": "pes2o-vector",
+      "score": 0.6322
+    },
+    {
+      "id": "pes2o:2606.00476v1",
+      "title": "Doing What They Say, Not What They Reason: Locating the Faithfulness Gap in LLM Agents",
+      "authors": "Yufeng Wang",
+      "published": "",
+      "source": "pes2o-vector",
+      "score": 0.6049
+    },
+    {
+      "id": "2607.13071",
+      "title": "Compaction as Epistemic Failure: How Agentic LLM Tools Fabricate Confirmed Results from Killed Processes",
+      "authors": "Hiroki Tamba",
+      "published": "2026-07-11T07:45:13Z",
+      "url": "https://arxiv.org/abs/2607.13071",
+      "source": "arxiv-vector",
+      "score": 0.5099
+    },
+    {
+      "id": "2609.02246",
+      "title": "LLM-as-a-Judge Is Not an Oracle: Why Self-Improving Agents Need Deterministic Guardrails",
+      "authors": "Vansh Wahi",
+      "published": "2026-09-02T07:54:23Z",
+      "url": "https://arxiv.org/abs/2609.02246",
+      "source": "arxiv-vector",
+      "score": 0.5069
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "prompt": "方向: Enhanced Stable View Synthesis. 扮演审稿人攻击上一步草稿, 逐条回应并修改",
+    "stage": "D4",
+    "text": "<think>\n好的, 针对扮演审稿人攻击上一步草稿, 逐条回应并修改, 先给结论再给依据, 假设与证据严格区分。 攻击一(证据不足): 草稿中凡无证据cvpr2021/Wang_Engaged_CVPR_2021_paper支撑的形容词(“显著”“广泛”)全部删除或降级为“待验证”。 攻击二(基线缺失): 仅以本文自比属于自证循环; 修改"
+  },
+  {
+    "prompt": "方向: Improving Large Molecular Language Model via Relation-aware Multimodal Colla",
+    "stage": "D2",
+    "text": "<think>\n好的, 针对用户要求写出可复现实验配置, 含种子管理, 先给结论再给依据, 假设与证据严格区分。 种子管理: 主种子42, 复现种子[42,43,44], 数据划分种子固定并记录哈希; 任何未记录种子的数字不得进入正文。 环境冻结: 模型版本、依赖版本、CUDA版本写入配置快照, 快照文件随实验产物一起落盘, 缺快照"
+  }
+]
