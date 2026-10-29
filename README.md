@@ -20,3 +20,24 @@ python3 paper_agent/infer/infer_agent.py --prompt "LLM agent evaluation GAP与�
 - venv在 /data1/paper_agent_venv (工作目录含冒号无法直接venv)
 - 训练输出 paper_agent/outputs/tmlr-qwen3-4b-agent + cfg_snapshot.json
 - TMLR: claim ledger必填, Abstract最后写, G1/G3/G4/G9/G10硬线
+
+## Reproduce offline
+
+```bash
+# 1) evidence bundle integrity (tracked evidence files only)
+cd evidence && sha256sum -c MANIFEST.sha256 && cd ..
+
+# 2) all committed JSON parses
+python3 - <<'CHECK'
+import json, pathlib
+for path in pathlib.Path('.').rglob('*.json'):
+    json.loads(path.read_text())
+print('all JSON parses')
+CHECK
+```
+
+`evidence/data_manifest.sha256` additionally records local model checkpoints and
+the external `/data1` corpora. It is not reproducible on a fresh clone because
+those large artifacts are not redistributed. The current evidence manifest also
+predates the repository cleanup, so `make_manifest.py --check` should be rerun
+on the original machine before relying on that broader manifest.
