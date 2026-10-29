@@ -24,20 +24,13 @@ python3 paper_agent/infer/infer_agent.py --prompt "LLM agent evaluation GAPä¸ŽåŸ
 ## Reproduce offline
 
 ```bash
-# 1) evidence bundle integrity (tracked evidence files only)
-cd evidence && sha256sum -c MANIFEST.sha256 && cd ..
-
-# 2) all committed JSON parses
-python3 - <<'CHECK'
-import json, pathlib
-for path in pathlib.Path('.').rglob('*.json'):
-    json.loads(path.read_text())
-print('all JSON parses')
-CHECK
+# Fresh-clone check: tracked files, committed JSON, and evidence hashes
+python3 evidence/verify_tracked.py
 ```
 
-`evidence/data_manifest.sha256` additionally records local model checkpoints and
-the external `/data1` corpora. It is not reproducible on a fresh clone because
-those large artifacts are not redistributed. The current evidence manifest also
-predates the repository cleanup, so `make_manifest.py --check` should be rerun
-on the original machine before relying on that broader manifest.
+The fresh-clone verifier deliberately does not validate
+`evidence/data_manifest.sha256`. That dated snapshot includes local model
+checkpoints and mutable external `/data1` corpora that are not redistributed.
+On the original machine, `python3 evidence/make_manifest.py --check` can audit
+that historical inventory, but missing or changed external files should be
+reported as drift rather than silently replacing the snapshot.
