@@ -1,6 +1,8 @@
-# paper_agent requirements (venv at /data1/paper_agent_venv, code here)
-# torch CUDA 121 first:
-# /data1/paper_agent_venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cu121
+# Offline evidence check does not need this file:
+#   python3 evidence/verify_tracked.py
+# Historical original-machine venv (not shipped): /data1/paper_agent_venv
+# GPU train/infer only, after you choose a venv:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
 transformers>=4.44
 peft>=0.12
 trl>=0.9

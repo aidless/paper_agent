@@ -4,15 +4,17 @@
 证据仍只来自本篇元数据(title/abstract/tldr/venue); 超出证据的皆标注为假设/待验证.
 """
 import json
+import os
 import random
 import sys
 
-import pandas as pd
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from repo_root import refuse_corpus_rebuild, repo_path
 
-CORPUS = "/data3/Research/corpus_hf/all-papers.parquet"
-OUT_TRAIN = "paper_agent/data/sft_p0v2_train.jsonl"
-OUT_VAL = "paper_agent/data/sft_p0v2_val.jsonl"
-N_PAPERS = int(sys.argv[1]) if len(sys.argv) > 1 else 400
+OUT_TRAIN = repo_path("data/sft_p0v2_train.jsonl")
+OUT_VAL = repo_path("data/sft_p0v2_val.jsonl")
+_ARGS = [arg for arg in sys.argv[1:] if arg != "--write"]
+N_PAPERS = int(_ARGS[0]) if _ARGS else 400
 SEED = 42
 FLOOR = 300
 
@@ -118,8 +120,10 @@ def build_examples(row, k0):
 
 
 def main():
+    corpus = refuse_corpus_rebuild()
+    import pandas as pd
     random.seed(SEED)
-    df = pd.read_parquet(CORPUS)
+    df = pd.read_parquet(corpus)
     df = df[df["title"].notna() & df["abstract"].notna()]
     df = df[df["abstract"].str.len() > 200]
     idx = random.sample(range(len(df)), min(N_PAPERS, len(df)))

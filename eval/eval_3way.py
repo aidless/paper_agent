@@ -3,7 +3,11 @@
 指标: val子集NLL(同一样本同一mask, 可比) + 生成质量(阶段标签/证据绑定/distinct-2/循环复读).
 输出: paper_agent/reports/eval_3way.json / .md
 """
-import json, os, re, gc, sys, torch
+import json, os, re, gc, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from repo_root import repo_path
+import torch
 for _v in ("http_proxy", "https_proxy", "all_proxy", "no_proxy",
            "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
     os.environ.pop(_v, None)
@@ -12,10 +16,10 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import PeftModel
 
 BASE = "Qwen/Qwen3-4B"
-AD68 = sys.argv[1] if len(sys.argv) > 1 else "paper_agent/outputs/tmlr-qwen3-4b-p1/checkpoint-68"
-AD270 = sys.argv[2] if len(sys.argv) > 2 else "paper_agent/outputs/tmlr-qwen3-4b-p1"
-VAL = sys.argv[3] if len(sys.argv) > 3 else "paper_agent/data/sft_p0_val.jsonl"
-OUT_JSON = sys.argv[4] if len(sys.argv) > 4 else "paper_agent/reports/eval_3way.json"
+AD68 = sys.argv[1] if len(sys.argv) > 1 else repo_path("outputs/tmlr-qwen3-4b-p1/checkpoint-68")
+AD270 = sys.argv[2] if len(sys.argv) > 2 else repo_path("outputs/tmlr-qwen3-4b-p1")
+VAL = sys.argv[3] if len(sys.argv) > 3 else repo_path("data/sft_p0_val.jsonl")
+OUT_JSON = sys.argv[4] if len(sys.argv) > 4 else repo_path("reports/eval_3way.json")
 OUT_MD = OUT_JSON[:-5] + ".md" if OUT_JSON.endswith(".json") else OUT_JSON + ".md"
 N_NLL = 60
 N_GEN = 8
@@ -123,7 +127,7 @@ for kind in ("base", "ckpt68", "ckpt270"):
     torch.cuda.empty_cache()
     print(json.dumps(results[kind]["gen"], ensure_ascii=False), flush=True)
 
-os.makedirs("paper_agent/reports", exist_ok=True)
+os.makedirs(os.path.dirname(OUT_JSON), exist_ok=True)
 results = {"base": results["base"], ADKEY68: results["ckpt68"], ADKEY270: results["ckpt270"],
            "_meta": {"AD68": AD68, "AD270": AD270, "VAL": VAL,
                      "note": "键名由适配器路径派生；NLL同一样本同掩码可比"}}

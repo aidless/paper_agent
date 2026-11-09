@@ -4,14 +4,15 @@ Each sampled paper yields 6 stage examples (D0..D5). Split by paper into
 train/val. Also emits DPO preference pairs (grounded vs citation-dropped).
 All evidence_refs point to real paper_ids. Honest label: template-synthesized.
 """
-import json, random, sys
-import pandas as pd
+import json, os, random, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from repo_root import refuse_corpus_rebuild, repo_path
 
-CORPUS = "/data3/Research/corpus_hf/all-papers.parquet"
-OUT_TRAIN = "paper_agent/data/sft_p0_train.jsonl"
-OUT_VAL = "paper_agent/data/sft_p0_val.jsonl"
-OUT_DPO = "paper_agent/data/dpo_p0.jsonl"
-N_PAPERS = int(sys.argv[1]) if len(sys.argv) > 1 else 400
+OUT_TRAIN = repo_path("data/sft_p0_train.jsonl")
+OUT_VAL = repo_path("data/sft_p0_val.jsonl")
+OUT_DPO = repo_path("data/dpo_p0.jsonl")
+_ARGS = [arg for arg in sys.argv[1:] if arg != "--write"]
+N_PAPERS = int(_ARGS[0]) if _ARGS else 400
 SEED = 42
 
 STAGES = ["D0", "D1", "D2", "D3", "D4", "D5"]
@@ -60,8 +61,10 @@ def build_examples(row):
     return exs, dpo
 
 def main():
+    corpus = refuse_corpus_rebuild()
+    import pandas as pd
     random.seed(SEED)
-    df = pd.read_parquet(CORPUS)
+    df = pd.read_parquet(corpus)
     df = df[df["title"].notna() & df["abstract"].notna()]
     df = df[df["abstract"].str.len() > 200]
     print("[p0] eligible papers:", len(df))

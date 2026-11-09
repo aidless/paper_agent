@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 """Qwen3-4B QLoRA训练 (6GB RTX3060 Laptop可用).
 配置即证据: 全部超参内嵌并输出cfg_snapshot.json (FM-29).
-venv: /data1/paper_agent_venv
-smoke: python train_agent.py --smoke          # 10步链路验证 (旧5条数据)
-p1:    python train_agent.py --p1             # P1正式SFT (P0 2160训/240验)
-full:  python train_agent.py                  # = --p1
+Not the offline evidence path. Needs a GPU and a local base model.
+Historical original-machine venv (not shipped): /data1/paper_agent_venv
+smoke: python train/train_agent.py --smoke
+p1:    python train/train_agent.py --p1
+full:  python train/train_agent.py
 """
-import argparse, json, os, random
+import argparse, json, os, random, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from repo_root import repo_path
 import numpy as np
 for _v in ("http_proxy", "https_proxy", "all_proxy", "no_proxy",
            "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
@@ -53,6 +57,12 @@ def main():
     if a.out_dir: out_dir = a.out_dir
     if a.train_file: train_file = a.train_file
     if a.val_file: val_file = a.val_file
+    out_dir = repo_path(out_dir)
+    train_file = repo_path(train_file)
+    if val_file:
+        val_file = repo_path(val_file)
+    if a.from_adapter:
+        a.from_adapter = repo_path(a.from_adapter)
     set_seed(CFG["seed"])
     os.makedirs(out_dir, exist_ok=True)
     snap = dict(CFG); snap["output_dir"] = out_dir; snap["train_file"] = train_file
@@ -70,7 +80,8 @@ def main():
         from datasets import load_dataset
     except Exception as e:
         print("[error] 缺依赖, 先安装requirements: %s" % e)
-        print("  /data1/paper_agent_venv/bin/pip install -r paper_agent/requirements.txt")
+        print("  python3 -m venv .venv && .venv/bin/pip install -r requirements.txt")
+        print("  Historical venv (not shipped): /data1/paper_agent_venv")
         return
     print("[model] load %s (4bit)" % CFG["base_model"])
     from transformers import BitsAndBytesConfig

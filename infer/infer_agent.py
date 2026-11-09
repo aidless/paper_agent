@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """推理: 基座+adapter, 绑定融合检索+ledger检查, 8步工具循环, 温度0."""
 import argparse, json, os, sys
-for _v in ("http_proxy", "https_proxy", "all_proxy", "no_proxy",
-           "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
-    os.environ.pop(_v, None)
-os.environ["HF_HUB_OFFLINE"] = "1"
-sys.path.insert(0, "paper_agent/retrieval")
-from fuse import fused_search
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "retrieval"))
+from repo_root import repo_path
+from fuse import fused_search, index_problem
 
-ADAPTER = "paper_agent/outputs/tmlr-qwen3-4b-agent"
+ADAPTER = repo_path("outputs/tmlr-qwen3-4b-agent")
 BASE = "Qwen/Qwen3-4B"
 
 def run(prompt, max_steps=8, adapter=None, no_model=False):
@@ -48,7 +48,18 @@ def main():
     ap.add_argument("--adapter", default=None)
     ap.add_argument("--no-model", action="store_true", help="纯检索冒烟, 不占显存")
     a = ap.parse_args()
+    problems = index_problem()
+    if problems:
+        for item in problems:
+            print("FAIL: %s" % item, file=sys.stderr)
+        print("Refusing to emit a draft that looks like a finished retrieval.", file=sys.stderr)
+        return 2
+    for _v in ("http_proxy", "https_proxy", "all_proxy", "no_proxy",
+               "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
+        os.environ.pop(_v, None)
+    os.environ["HF_HUB_OFFLINE"] = "1"
     print(json.dumps(run(a.prompt, adapter=a.adapter, no_model=a.no_model), ensure_ascii=False, indent=2))
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

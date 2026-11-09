@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 """从 evidence/data_manifest.sha256 生成 ASSET_INVENTORY.md。
 
-只读。复用价值按类别赋值, 关键条目单独覆盖。
-用法: python3 paper_agent/evidence/make_inventory.py
+默认拒绝执行。复用价值按类别赋值, 关键条目单独覆盖。
+用法: python3 evidence/make_inventory.py --write
+重写 ASSET_INVENTORY.md。fresh clone 没有 data_manifest 里的权重和 /data1 文件，
+不要在那种机器上 --write。类别 A 不是 P1 门禁通过。
 """
 import os
+import sys
 from datetime import datetime, timezone
 
 PA = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,7 +34,7 @@ def mib(n):
 # ---- 复用价值: 类别默认值 + 逐项覆盖 ----
 CAT_RULES = [
     ("outputs/tmlr-qwen3-4b-p1v2/checkpoint-136/", "A-交付",
-     "**唯一正式交付物**。LoRA r32/BF16, 504 张量。详见 DECISION_20261008.md 的三项复算警告。"),
+     "历史权重目录，不在 git clone 里。P1 门禁仍是 FAIL，此目录不是通过证明。"),
     ("outputs/", "B-备选", "备选/事故存档。含 optimizer.pt(252MiB)等续训状态, 仅在需要复现或续训时复用。"),
     ("data/", "C-数据", "训练/评测语料。构造脚本与 jsonl 同目录, 可重跑。"),
     ("train/", "D-代码", "训练脚本。含 P2 续训事故(wrongbase)的正确姿势。"),
@@ -175,4 +178,15 @@ def main():
 
 
 if __name__ == "__main__":
+    if "--write" not in sys.argv:
+        print(
+            "FAIL: this rewrites ASSET_INVENTORY.md from the historical data_manifest.",
+            file=sys.stderr,
+        )
+        print(
+            "That manifest lists checkpoints and /data1 files absent from a fresh clone.",
+            file=sys.stderr,
+        )
+        print("Pass --write only on the original machine. P1 gate remains FAIL.", file=sys.stderr)
+        sys.exit(2)
     main()

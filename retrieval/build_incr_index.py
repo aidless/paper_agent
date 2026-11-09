@@ -1,42 +1,57 @@
 # -*- coding: utf-8 -*-
-"""增量库向量索引：与peS2o基座同一embedding空间(all-MiniLM-L6-v2, 384维归一化IP).
-输入 /data1/arxiv_incremental/arxiv.db -> 输出 arxiv.index + arxiv_ids.json
+"""Build the incremental arXiv FAISS index in the peS2o MiniLM space.
+
+Requires ARXIV_INCREMENTAL (a directory that contains arxiv.db). The
+historical original-machine path is /data1/arxiv_incremental and is not a
+default. Missing input exits 2 before any embedding import.
 """
-import json
 import os
-import sqlite3
+import sys
 
-import faiss
-import numpy as np
 
-for _v in ("http_proxy", "https_proxy", "all_proxy", "no_proxy",
-           "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
-    __import__("os").environ.pop(_v, None)
-__import__("os").environ["HF_HUB_OFFLINE"] = "1"
+def main():
+    incr = os.environ.get("ARXIV_INCREMENTAL", "").strip()
+    db = os.path.join(incr, "arxiv.db") if incr else ""
+    if not incr or not os.path.isdir(incr) or not os.path.exists(db):
+        print("FAIL: ARXIV_INCREMENTAL is unset or has no arxiv.db.", file=sys.stderr)
+        print("Historical path (not in this repo): /data1/arxiv_incremental", file=sys.stderr)
+        return 2
 
-from sentence_transformers import SentenceTransformer
+    import json
+    import sqlite3
 
-INCR_DIR = "/data1/arxiv_incremental"
-INCR_DB = os.path.join(INCR_DIR, "arxiv.db")
-OUT_INDEX = os.path.join(INCR_DIR, "arxiv.index")
-OUT_IDS = os.path.join(INCR_DIR, "arxiv_ids.json")
+    import faiss
+    import numpy as np
+    from sentence_transformers import SentenceTransformer
 
-con = sqlite3.connect(INCR_DB)
-rows = list(con.execute("SELECT arxiv_id, title, abstract FROM papers ORDER BY published DESC"))
-con.close()
-print("[rows] %d" % len(rows), flush=True)
+    for _v in ("http_proxy", "https_proxy", "all_proxy", "no_proxy",
+               "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
+        os.environ.pop(_v, None)
+    os.environ["HF_HUB_OFFLINE"] = "1"
 
-import glob as _glob
-_snap = _glob.glob(os.path.expanduser(
-    "~/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/snapshots/*"))
-model = SentenceTransformer(_snap[0] if _snap else "all-MiniLM-L6-v2")
-texts = [((r[1] or "") + " " + (r[2] or ""))[:2000] for r in rows]
-emb = model.encode(texts, batch_size=64, show_progress_bar=False, normalize_embeddings=True)
-emb = np.asarray(emb, dtype=np.float32)
+    out_index = os.path.join(incr, "arxiv.index")
+    out_ids = os.path.join(incr, "arxiv_ids.json")
+    con = sqlite3.connect(db)
+    rows = list(con.execute("SELECT arxiv_id, title, abstract FROM papers ORDER BY published DESC"))
+    con.close()
+    print("[rows] %d" % len(rows), flush=True)
 
-index = faiss.IndexFlatIP(emb.shape[1])
-index.add(emb)
-faiss.write_index(index, OUT_INDEX)
-with open(OUT_IDS, "w", encoding="utf-8") as f:
-    json.dump([r[0] for r in rows], f)
-print("[done] ntotal=%d dim=%d -> %s" % (index.ntotal, emb.shape[1], OUT_INDEX), flush=True)
+    import glob as _glob
+    snap = _glob.glob(os.path.expanduser(
+        "~/.cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/snapshots/*"))
+    model = SentenceTransformer(snap[0] if snap else "all-MiniLM-L6-v2")
+    texts = [((r[1] or "") + " " + (r[2] or ""))[:2000] for r in rows]
+    emb = model.encode(texts, batch_size=64, show_progress_bar=False, normalize_embeddings=True)
+    emb = np.asarray(emb, dtype=np.float32)
+
+    index = faiss.IndexFlatIP(emb.shape[1])
+    index.add(emb)
+    faiss.write_index(index, out_index)
+    with open(out_ids, "w", encoding="utf-8") as handle:
+        json.dump([r[0] for r in rows], handle)
+    print("[done] ntotal=%d dim=%d -> %s" % (index.ntotal, emb.shape[1], out_index), flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

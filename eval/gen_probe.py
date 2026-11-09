@@ -4,6 +4,9 @@ import json
 import os
 import random
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from repo_root import repo_path
 
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 3
 MAXTOK = int(sys.argv[2]) if len(sys.argv) > 2 else 200
@@ -17,7 +20,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import PeftModel
 
-AD = "paper_agent/outputs/tmlr-qwen3-4b-p1v2/checkpoint-136"
+AD = repo_path("outputs/tmlr-qwen3-4b-p1v2/checkpoint-136")
 tok = AutoTokenizer.from_pretrained("Qwen/Qwen3-4B", trust_remote_code=True)
 if tok.pad_token is None:
     tok.pad_token = tok.eos_token
@@ -27,7 +30,7 @@ m = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-4B", quantization_config=bn
                                          device_map="auto", trust_remote_code=True)
 m = PeftModel.from_pretrained(m, AD)
 m.eval()
-val = [json.loads(l) for l in open("paper_agent/data/sft_p0v2_val.jsonl", encoding="utf-8")]
+val = [json.loads(l) for l in open(repo_path("data/sft_p0v2_val.jsonl"), encoding="utf-8")]
 random.seed(7)
 out = []
 for i in random.sample(range(len(val)), N):
@@ -42,5 +45,5 @@ for i in random.sample(range(len(val)), N):
     print("=== STAGE", val[i]["task_stage"], "PROMPT:", msgs[0]["content"][:60])
     print(txt[:700])
     print()
-json.dump(out, open("paper_agent/reports/gen_probe_136.json", "w", encoding="utf-8"),
+json.dump(out, open(repo_path("reports/gen_probe_136.json"), "w", encoding="utf-8"),
           ensure_ascii=False, indent=2)
