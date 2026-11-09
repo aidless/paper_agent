@@ -2,6 +2,8 @@
 
 总大小：4.4G（含全部 checkpoint）。以下为核心可复用资产。
 
+Adapter 两行指向 gitignore 的权重，本 clone 里没有这些文件，那两枚前 16 位哈希本次没有复算。表里改过路径或表述的文件已按当前字节重算；没改的文件仍与 2026-10-08 的前 16 位一致。这些哈希是文件身份，不是模型分数。P1 门禁仍是 FAIL。
+
 ## 模型
 
 | 文件 | 大小 | sha256（前16） | 复用价值 |
@@ -23,19 +25,19 @@
 | 文件 | 大小 | sha256（前16） | 复用价值 |
 |---|---|---|---|
 | `data/build_sft.py` | 3.1KB | `82dfc588ac262dff` | SFT 数据构建 |
-| `data/build_p0v2.py` | 7.5KB | `6de9737867ab8125` | P0 v2 数据构建 |
-| `data/build_dpo_v2.py` | 3.2KB | `302429b7ee50061b` | DPO 数据构建 |
-| `eval/eval_3way.py` | 7.1KB | `140922d7b0d830b4` | 三方评测 |
+| `data/build_p0v2.py` | 7656 B | `ed2de7d9301a22fb` | P0 v2 数据构建（路径修正后重算，不是新训练） |
+| `data/build_dpo_v2.py` | 3344 B | `2389664883917bb9` | DPO 数据构建（路径修正后重算，不是新训练） |
+| `eval/eval_3way.py` | 7267 B | `f168ac4449d151ce` | 三方评测（路径修正后重算，不是新评测） |
 
 ## 报告
 
 | 文件 | 大小 | sha256（前16） | 复用价值 |
 |---|---|---|---|
 | `reports/eval_3way_v2.json` | 2.9KB | `1015cf050aacb42f` | 最优评测结果 |
-| `reports/eval_3way_v2.md` | 805B | `191d8fcba32e67fe` | 评测报告 |
-| `reports/P1_VERDICT.md` | 1.6KB | `02e41ed0ef923996` | P1 判决 |
-| `reports/P2_VERDICT.md` | 1.2KB | `5763223a6457e828` | P2 判决 |
-| `DELIVERY.md` | 1.5KB | `bdbee94d957c55f8` | 交付文档 |
+| `reports/eval_3way_v2.md` | 1125 B | `bae321fa5e35835e` | 评测报告（行名与 0.125 对齐 JSON，数字未新测） |
+| `reports/P1_VERDICT.md` | 1970 B | `19d7b2dd83cca46a` | P1 判决（仍是 FAIL） |
+| `reports/P2_VERDICT.md` | 1379 B | `47aacba3ba025d69` | P2 判决（仍是 FAIL） |
+| `DELIVERY.md` | 1730 B | `55c7d18f3232fc0e` | 交付文档（标明不推翻 P1 FAIL） |
 | `evidence/env_fingerprint.json` | 4.4KB | `c1fc835fa7e2ad47` | 环境指纹 |
 
 ## 封存声明

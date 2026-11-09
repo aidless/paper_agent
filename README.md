@@ -1,49 +1,50 @@
-# 论文全流程Agent (Qwen3-4B QLoRA + peS2o/arXiv双库)
+# paper_agent
 
 [![CI](https://github.com/aidless/paper_agent/actions/workflows/static-checks.yml/badge.svg)](https://github.com/aidless/paper_agent/actions/workflows/static-checks.yml)
 
-> **English TL;DR**: A minimal engineering package for a paper-workflow agent on Qwen3-4B QLoRA: SFT/DPO data construction, retrieval fusion over an external peS2o FAISS index plus an incremental arXiv corpus, inference, and three-way evaluation; the evidence chain is verifiable without a GPU via `python3 evidence/verify_tracked.py`. Its defining stance is honest negative reporting — the recorded P1 verdict flags template-shortcut learning over genuine writing ability, with numbers recomputable from committed JSON.
+STATUS: WORK-IN-PROGRESS — not A yet.
 
-论文全流程 Agent 的最小工程包：SFT/DPO 数据构建、检索融合、推理与三方对比评估，全部代码与报告都在本仓内。
+## Problem
 
-**验证过什么**：`reports/P1_VERDICT.md` 记录了 60 条 val（同一掩码）NLL 从 base 4.4904 降到 ckpt-270 1.1030，8 条贪心生成；同时坦诚判定 P1 门禁 FAIL（学到模板捷径而非写作能力）。数字可由 `reports/eval_3way.json` 逐样本复算。
+Offline, `python3 evidence/verify_tracked.py` checks tracked files, `evidence/MANIFEST.sha256`, and generation aggregates recomputed from `gen_detail` in `reports/eval_3way.json`.
+That JSON is the P1 gate **FAIL**: 60-row val NLL 4.4904 (base) and 1.1030 (ckpt-270). The drop is template-shortcut learning, not writing ability.
+Training, inference, and retrieval need a GPU plus external `PE_S2O_KB_FAISS` and `ARXIV_INCREMENTAL` (historical `/data1/...` layout, not in this clone).
 
-**怎么跑**（干净 clone，不需要 GPU 即可验证证据）：
+<!-- claims:eval_3way.json
+base.val_nll_60=4.4904
+ckpt270.val_nll_60=1.1030
+p1_gate=FAIL
+-->
+
+## Offline path
+
+A git clone, no GPU and no pip install. Expect seconds, not a training run. The command needs `git ls-files` (a GitHub zip of the tree without `.git` cannot run it).
+
+```bash
+python3 evidence/verify_tracked.py
+```
+
+`.github/workflows/static-checks.yml` runs that command after a Python syntax compile and a JSON parse. `evidence/data_manifest.sha256` is a historical inventory of checkpoints and external files. The verifier does not treat a missing external tree as success. On the original machine, `python3 evidence/make_manifest.py --check` audits that inventory; missing `/data1` files there are drift, not a cue to regenerate the snapshot.
+
+The Chinese gate write-up is `reports/P1_VERDICT.md`. It stays FAIL.
+
+## Not the offline path
+
+Set `PE_S2O_KB_FAISS` and `ARXIV_INCREMENTAL` to indexes you provide. Historical directories were `/data1/peS2o_kb_faiss` and `/data1/arxiv_incremental`. Unset or missing indexes exit 2. See `FAILURE_MODES.md`.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-python3 evidence/verify_tracked.py
-```
-
-## 一键运行（需 GPU）
-
-```bash
-.venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cu121
-python3 data/build_sft.py
-python3 retrieval/build_incr_index.py
+# GPU and the external indexes. Not run for the numbers in this README.
 python3 retrieval/fuse.py "LLM agent evaluation"
 python3 eval/eval_agent.py
-python3 infer/infer_agent.py --prompt "LLM agent evaluation GAP与基线"
-.venv/bin/python train/train_agent.py --smoke
-.venv/bin/python train/train_agent.py
+python3 infer/infer_agent.py --prompt "LLM agent evaluation GAP与基线" --no-model
 ```
 
-## 约定
-- 基座语料 `$PE_S2O_KB_FAISS`（外部只读 FAISS 索引，541745 篇；不随仓库分发，需自行准备）
-- 增量语料目录 `$ARXIV_INCREMENTAL`，独立于基座，每日 `--fetch` 增量更新
-- 训练输出 `outputs/tmlr-qwen3-4b-agent` + `cfg_snapshot.json`
-- TMLR: claim ledger必填, Abstract最后写, G1/G3/G4/G9/G10硬线
+Training entry points are `train/train_agent.py` and `train/train_dpo.py`. Rebuilding data (`data/build_p0.py` and the v2 builders) needs `PAPER_CORPUS_PARQUET` and `--write`, and overwrites committed jsonl. The historical parquet was `/data3/Research/corpus_hf/all-papers.parquet`. This tree does not contain it, and this change did not rebuild data or train.
 
-## Reproduce offline
+## Gaps (why this is not A)
 
-```bash
-# Fresh-clone check: tracked files, committed JSON, and evidence hashes
-python3 evidence/verify_tracked.py
-```
-
-The fresh-clone verifier deliberately does not validate
-`evidence/data_manifest.sha256`. That dated snapshot includes local model
-checkpoints and mutable external `/data1` corpora that are not redistributed.
-On the original machine, `python3 evidence/make_manifest.py --check` can audit
-that historical inventory, but missing or changed external files should be
-reported as drift rather than silently replacing the snapshot.
+1. `val_nll_60` is a stored scalar. Token losses are not in the JSON, so 4.4904 and 1.1030 are locked to the file, not recomputed from logits.
+2. Checkpoints and both FAISS corpora are outside the clone. Train, infer, and retrieval were not re-run here.
+3. `reports/eval_3way_v2.json` records a later val NLL 0.3879. That number does not reverse the P1 FAIL. It is not recomputed from logits either.
+4. Dated corpus counts disagree across files. They are listed in `FAILURE_MODES.md` and were not re-counted.

@@ -1,5 +1,7 @@
 # 检索升级记录（2026-09-10）
 
+> HISTORICAL. `/data1/...` paths are the original machine and are not in this repo. 17263 and 541744 are that snapshot (541744 is a vector count). They are not re-counted here, and they are not the same field as the later `env_fingerprint.json` row counts.
+
 ## 做了什么
 
 1. 增量库向量索引：`/data1/arxiv_incremental/arxiv.index`（17263向量，384维，

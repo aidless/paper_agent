@@ -4,12 +4,14 @@ chosen: 带证据绑定的实质修改(>=200字); rejected: 去证据+绝对化�
 诚实标签: 合成偏好(规则构造), 非真人标注; 仅作P2冷启动, 真人偏好后续升级.
 """
 import json
+import os
+import sys
 
-import pandas as pd
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from repo_root import refuse_corpus_rebuild, repo_path
 
-CORPUS = "/data3/Research/corpus_hf/all-papers.parquet"
-OUT = "paper_agent/data/dpo_p0v2.jsonl"
-SRC = "paper_agent/data/dpo_p0.jsonl"
+OUT = repo_path("data/dpo_p0v2.jsonl")
+SRC = repo_path("data/dpo_p0.jsonl")
 FLOOR = 200
 
 CHO = [
@@ -40,7 +42,10 @@ def S(x):
 
 
 def main():
-    df = pd.read_parquet(CORPUS, columns=["paper_id", "title", "abstract"])
+    global pd
+    corpus = refuse_corpus_rebuild()
+    import pandas as pd
+    df = pd.read_parquet(corpus, columns=["paper_id", "title", "abstract"])
     meta = {}
     for _, r in df.iterrows():
         meta[S(r["paper_id"])] = (S(r["title"]), S(r["abstract"])[:500])

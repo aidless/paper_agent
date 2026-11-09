@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
-"""P2 DPO: SFT adapter + 合成偏好对(dpo_p0v2), 去模板腔、学证据绑定.
+"""P2 DPO: SFT adapter + 合成偏好对(dpo_p0v2).
 配置即证据: 超参内嵌并输出cfg_snapshot.json (FM-29).
-venv: /tmp/sota-venv-ap17 (torch2.14+trl1.13; paper_agent_venv的trl1.12与torch2.5不兼容, DPOTrainer无法import)
-  冻结清单: paper_agent/reports/dpo_env_freeze.txt (/tmp易失, 重建用)
-smoke: /tmp/sota-venv-ap17/bin/python train_dpo.py --smoke   # 10步链路验证
-p2:    /tmp/sota-venv-ap17/bin/python train_dpo.py --p2       # P2正式DPO (默认)
+Not the offline evidence path. P2_VERDICT records GPU OOM on a 6GB card.
+Historical venv (not shipped, and /tmp is gone): /tmp/sota-venv-ap17
+Frozen note: reports/dpo_env_freeze.txt
 """
-import argparse, json, os, random
+import argparse, json, os, random, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from repo_root import repo_path
 import numpy as np
 
 CFG = {
@@ -48,6 +50,9 @@ def main():
     if a.out_dir: out_dir = a.out_dir
     if a.train_file: train_file = a.train_file
     if a.sft_adapter: sft_ad = a.sft_adapter
+    out_dir = repo_path(out_dir)
+    train_file = repo_path(train_file)
+    sft_ad = repo_path(sft_ad)
     set_seed(CFG["seed"])
     os.makedirs(out_dir, exist_ok=True)
     snap = dict(CFG); snap.update({"output_dir": out_dir, "train_file": train_file,

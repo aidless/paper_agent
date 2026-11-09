@@ -1,5 +1,7 @@
 # P1 结论（2026-09-10 实测）
 
+**门禁判定维持 FAIL。** 后文以及 `reports/eval_3way_v2.json` 里更低的 NLL 不在下表内，不构成改判。本仓库路径是 `reports/eval_3way.json`（历史记录写作 `paper_agent/reports/eval_3way.json`，同一文件）。
+
 ## 三方对比（60条val同一掩码NLL + 8条贪心生成）
 
 | 模型 | val NLL | 阶段标签率 | 证据绑定率 | distinct-2 | 循环复读数 | 平均长度 |
@@ -8,7 +10,7 @@
 | ckpt-68 | 1.1030 | 0.00 | 0.50 | 0.9361 | 1 | 83 |
 | ckpt-270 | 1.1030 | 0.00 | 0.50 | 0.9361 | 1 | 83 |
 
-- 证据：`paper_agent/reports/eval_3way.json`（逐样本明细在内），`eval_3way.md`，`eval_3way.log`
+- 证据：`paper_agent/reports/eval_3way.json`（生成侧逐条在 `gen_detail`；`val_nll_60` 只是标量，不能从该文件重算 token NLL），`eval_3way.md`，`eval_3way.log`
 - ckpt-68与ckpt-270权重md5不同但NLL四位小数相同、生成明细逐条相同：判为贪心解码收敛到同一输出 + 舍入所致，非评估脚本复用同一权重。NLL若保留更多小数位应有微差（待查，不影响结论方向）。
 
 ## 门禁判定：FAIL（过拟合信号成立）

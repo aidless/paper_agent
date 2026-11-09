@@ -1,8 +1,8 @@
 name: static-checks
 
-# Deterministic, offline checks: Python syntax across the tree + JSON well-formedness.
-# Deliberately does not install third-party dependencies, so it cannot fail for
-# environment reasons — it only catches broken source or corrupted data files.
+# Deterministic, offline checks. No third-party install and no GPU.
+# Syntax, JSON parse, then evidence/verify_tracked.py (manifest, eval aggregates,
+# README numbers vs reports/eval_3way.json, P1 gate still FAIL).
 on:
   push:
     branches: ["main"]
@@ -80,3 +80,5 @@ jobs:
               print("JSON", b)
           sys.exit(1 if bad else 0)
           PY
+      - name: Offline evidence verifier
+        run: python3 evidence/verify_tracked.py
