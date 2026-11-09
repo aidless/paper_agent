@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/aidless/paper_agent/actions/workflows/static-checks.yml/badge.svg)](https://github.com/aidless/paper_agent/actions/workflows/static-checks.yml)
 
+> **English TL;DR**: A minimal engineering package for a paper-workflow agent on Qwen3-4B QLoRA: SFT/DPO data construction, retrieval fusion over an external peS2o FAISS index plus an incremental arXiv corpus, inference, and three-way evaluation; the evidence chain is verifiable without a GPU via `python3 evidence/verify_tracked.py`. Its defining stance is honest negative reporting — the recorded P1 verdict flags template-shortcut learning over genuine writing ability, with numbers recomputable from committed JSON.
+
 论文全流程 Agent 的最小工程包：SFT/DPO 数据构建、检索融合、推理与三方对比评估，全部代码与报告都在本仓内。
 
 **验证过什么**：`reports/P1_VERDICT.md` 记录了 60 条 val（同一掩码）NLL 从 base 4.4904 降到 ckpt-270 1.1030，8 条贪心生成；同时坦诚判定 P1 门禁 FAIL（学到模板捷径而非写作能力）。数字可由 `reports/eval_3way.json` 逐样本复算。
