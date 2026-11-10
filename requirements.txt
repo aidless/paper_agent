@@ -2,7 +2,7 @@
 # torch CUDA 121 first:
 # /data1/paper_agent_venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cu121
 transformers>=4.44
-peft>=0.12
+peft>=0.21.2
 trl>=0.9
 bitsandbytes>=0.43
 accelerate>=0.33
