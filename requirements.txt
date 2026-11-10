@@ -3,7 +3,7 @@
 # /data1/paper_agent_venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cu121
 transformers>=4.44
 peft>=0.12
-trl>=0.9
+trl>=1.17.1
 bitsandbytes>=0.43
 accelerate>=0.33
 datasets>=2.20
