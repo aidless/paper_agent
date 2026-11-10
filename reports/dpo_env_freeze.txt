@@ -1,6 +1,6 @@
 accelerate==1.15.0
 bitsandbytes==0.50.2
-datasets==4.8.5
+datasets==5.1.0
 peft==0.20.0
 sentence-transformers==5.7.0
 torch==2.14.0
