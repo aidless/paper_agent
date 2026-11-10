@@ -8,7 +8,7 @@ bitsandbytes>=0.43
 accelerate>=0.33
 datasets>=2.20
 sentence-transformers>=3.0
-faiss-cpu>=1.8
+faiss-cpu>=1.15.1
 arxiv>=2.1
 numpy<2.0
 scipy
