@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""生成可复现性证据包: data_manifest.sha256 + env_fingerprint.json + MANIFEST.sha256
+"""生成本机证据快照: data_manifest.sha256 + env_fingerprint.json + MANIFEST.sha256
 
-只读, 不修改任何原始产物。所有哈希可用 `sha256sum -c` 复验。
+不修改原始训练产物，但生成模式会覆盖三个证据清单。历史快照不应在
+外部语料漂移后直接重生成；fresh clone 请运行 verify_tracked.py。
 
 用法:
-  python3 paper_agent/evidence/make_manifest.py            # 生成到 paper_agent/evidence/
-  python3 paper_agent/evidence/make_manifest.py --check    # 复验已有清单, 不重写
+  python3 evidence/make_manifest.py --check    # 复验已有历史清单, 不重写
+  python3 evidence/make_manifest.py --write    # 明确覆盖本机快照
 """
 import argparse
 import hashlib
@@ -211,7 +212,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="复验 data_manifest.sha256, 不重写清单")
+    ap.add_argument("--write", action="store_true",
+                    help="明确覆盖本机 data/environment/evidence 快照")
     a = ap.parse_args()
+
+    if a.check == a.write:
+        ap.error("choose exactly one of --check or --write")
 
     os.makedirs(EV, exist_ok=True)
 
