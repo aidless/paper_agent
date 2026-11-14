@@ -128,14 +128,12 @@ def _vec_resources():
         _vec_resources.cache = "init"
     if _vec_resources.cache == "init":
         try:
-            import glob
             import faiss
             import numpy as np
             for _v in ("http_proxy", "https_proxy", "all_proxy", "no_proxy",
                        "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
                 os.environ.pop(_v, None)
             os.environ["HF_HUB_OFFLINE"] = "1"
-            from sentence_transformers import SentenceTransformer
             idx_path = os.path.join(INCR_DIR, "arxiv.index")
             ids_path = os.path.join(INCR_DIR, "arxiv_ids.json")
             if not (os.path.exists(idx_path) and os.path.exists(ids_path)):
