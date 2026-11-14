@@ -241,3 +241,46 @@ checkpoints and mutable external `/data1` corpora that are not redistributed.
 On the original machine, `python3 evidence/make_manifest.py --check` can audit
 that historical inventory, but missing or changed external files should be
 reported as drift rather than silently replacing the snapshot.
+
+## 验收标准与复算
+
+验收判据：本仓判为合格的条件是 `python3 eval/run_cases.py` 通过率必须为 100%（20/20），且 `make eval` 退出码必须为 0；任何一条失败即判为不合格。题库里每条 case 的 `expected` 都是从本仓真实 API / 落盘数据现算出来的值，不是抄文档——改了实现或数据而不同步改期望值，这一节就会判红。
+
+`eval/cases.jsonl` 的 20 条 case 按 axis 分工（七键 `id/axis/question/expected/mode/verify/source`，全部是 `expr`，真调本仓函数或真解析本仓数据文件）：
+
+| axis | 条数 | 测什么 | 代表 case |
+|---|---|---|---|
+| retrieval/tokens | 3 | `retrieval/fuse.py` 的 `_tokens` 分词、短词回退、4 token 截断 | PA-01/02/03 |
+| retrieval/fusion | 3 | `fused_search` 四路候选去重、按分数降序取 top_k、`recency_boost` 加分重排 | PA-04/05/06 |
+| data/sft | 3 | `data/sft_p0v2_val.jsonl` 条数与阶段分布、`data/sft_fullprocess.jsonl` 证据绑定字段 | PA-07/08/09 |
+| data/dpo | 2 | `data/dpo_p0v2.jsonl` 对数与 chosen 最短长度（构建地板 200） | PA-10/11 |
+| reports/eval | 3 | `reports/eval_3way_v2.json` 的 NLL、由 `gen_detail` 逐条重算证据绑定率与平均长度 | PA-12/13/14 |
+| data/fixture | 2 | `data/eval_fixed.jsonl` 条数与 `pred_ok` 计数 | PA-15/16 |
+| evidence/manifest | 2 | `evidence/MANIFEST.sha256` 哈希实测复算、记录行数 | PA-17/18 |
+| build/consts | 2 | `data/build_sft.py` 的 SEEDS 阶段序列、`data/build_p0v2.py` 的 FLOOR | PA-19/20 |
+
+三条复算命令（在仓库根目录跑，不需要 GPU / 大模型 / 训练产物）：
+
+```bash
+python3 eval/run_cases.py              # 20/20 才算通过
+python3 eval/run_cases.py --selftest   # 19/20 且 exit 0：第 1 条期望值被篡改成不可能值，必须变红
+python3 eval/run_cases.py --save       # 另把本次结果落盘到 eval/run-report.json
+```
+
+复算说明：
+
+- `eval/run_cases.py` 与题库分离：脚本只做「执行 + 比较 + 归因」，期望值全部写在 `eval/cases.jsonl` 的 `expected` 字段，出处见同条 `source`（`path:line`）。
+- `make eval` = `python3 eval/run_cases.py` + `python3 -m pytest tests -q`；前者先跑，任何一条 case 失败就中断，随后才是 `tests/` 那 4 条静态解析 / 检索降级 / 评测数字一致性测试。
+- `--selftest` 证明这套题不是装饰：它把 PA-01 的期望值换成 `__selftest_impossible_value__`，必须出现 1 条失败，否则脚本自己 exit 3。
+- 结果文件 `eval/run-report.json` 由 `--save` 生成，含 `total/passed/failed/failed_by_axis/results`，与 `python3 eval/run_cases.py --json` 的输出逐字相同；要复算某个数字，重跑对应 case 的 `verify` 代码即可。
+- PA-20 在 import `data/build_p0v2.py` 前把 `sys.argv` 收缩成只含脚本名——该模块顶层用 `sys.argv[1]` 当 `N_PAPERS`，不隔离就会把 `--selftest` 当整数解析。
+
+失败归因（按 axis 汇总，不是只报一个 pass_rate）：`--selftest` 的实测输出长这样——
+
+```
+失败归因（按 axis）：
+  retrieval/tokens: 1 条 —— PA-01
+SELFTEST: 期望变红；若上面仍全绿则这套题无效
+```
+
+机器可读版本在 `eval/run-report.json` 的 `failed_by_axis` 字段（axis → 失败 case id 列表）。真实回归失败时按这张表定位到函数/数据文件，而不是去猜哪一步坏了。
