@@ -101,8 +101,20 @@ JSON
       echo "   用 kaggle datasets list -m 或页面 URL 读出真实 slug，写进 kernel-metadata.json" >&2
       rm -f "$PUSH_LOG"; exit 5
     fi
+    # 「最大批量 GPU 会话数已满」同样是失败，而 Kaggle 只打一行、退出码 0
+    # （2026-11-19 实测：`Kernel push error: Maximum batch GPU session count of 2 reached.`
+    #   打完之后这条脚本自己还印「已提交」，是最后一处假绿）。
+    if grep -q "Kernel push error" "$PUSH_LOG"; then
+      echo "❌ kernel 提交失败：$(grep -m1 'Kernel push error' "$PUSH_LOG" | sed 's/^.*error: //')" >&2
+      rm -f "$PUSH_LOG"; exit 7
+    fi
+    # 成功判据是「真的出现了 successfully pushed」，不是「命令没报错」
+    if ! grep -q "successfully pushed" "$PUSH_LOG"; then
+      echo "❌ kernel 提交没有出现 'successfully pushed'（视为未提交）" >&2
+      rm -f "$PUSH_LOG"; exit 8
+    fi
     rm -f "$PUSH_LOG"
-    echo "已提交。用 --status 看进度，--fetch 拉产物。"
+    echo "已提交（有 successfully pushed 见证）。用 --status 看进度，--fetch 拉产物。"
     ;;
   status)
     kaggle kernels status "$FULL_KERNEL"
