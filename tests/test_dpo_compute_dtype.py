@@ -31,6 +31,7 @@ class _FakeTorch:
 
     bfloat16 = _D("bfloat16")
     float16 = _D("float16")
+    float32 = _D("float32")
 
 
 class TestPickComputeDtype(unittest.TestCase):
@@ -40,15 +41,19 @@ class TestPickComputeDtype(unittest.TestCase):
                 got = train_dpo.pick_compute_dtype(cap, _FakeTorch)
                 self.assertIs(got, _FakeTorch.bfloat16, "capability %s 支持 bf16" % (cap,))
 
-    def test_turing及更老用float16(self):
-        # T4 = (7,5) / V100 = (7,0) / 更老一律 fp16：这些卡 bf16 会非法访存
+    def test_turing及更老用float32(self):
+        # T4 = (7,5) / V100 = (7,0) / 更老一律 fp32。
+        # 2026-11-19 云端第二轮实测：fp16 也过不了 —— 4bit gemm 走
+        # `_dequant_linear_fallback` → `F.linear` → `cublasGemmEx` 时
+        # `RuntimeError: CUDA error: CUBLAS_STATUS_NOT_SUPPORTED ... CUDA_R_16F ...
+        # compute_type`（T4 上的 fp16 累加组合不被 cuBLAS 接受）。
         for cap in ((7, 5), (7, 0), (6, 1), (5, 2)):
             with self.subTest(cap=cap):
                 got = train_dpo.pick_compute_dtype(cap, _FakeTorch)
-                self.assertIs(got, _FakeTorch.float16, "capability %s 不支持 bf16" % (cap,))
+                self.assertIs(got, _FakeTorch.float32, "capability %s 必须退 fp32" % (cap,))
 
-    def test_能力查询失败时保守用float16(self):
-        self.assertIs(train_dpo.pick_compute_dtype(None, _FakeTorch), _FakeTorch.float16)
+    def test_能力查询失败时保守用float32(self):
+        self.assertIs(train_dpo.pick_compute_dtype(None, _FakeTorch), _FakeTorch.float32)
 
 
 class TestCallSiteUsesCapability(unittest.TestCase):

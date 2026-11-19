@@ -46,7 +46,11 @@ def pick_compute_dtype(capability, torch_mod):
     """
     if capability and capability[0] >= 8:
         return torch_mod.bfloat16
-    return torch_mod.float16
+    # 2026-11-19 云端第二轮实测：Turing 上退 fp16 也不够。4bit gemm 走
+    # `_dequant_linear_fallback` → `F.linear` → `cublasGemmEx` 时
+    # `RuntimeError: CUBLAS_STATUS_NOT_SUPPORTED ... CUDA_R_16F ... compute_type`
+    # —— T4/V100 上 fp16 的累加组合不被 cuBLAS 接受。宁可慢，必须 fp32。
+    return torch_mod.float32
 
 
 def attach_trainable_adapter(model, sft_ad, *, peft_mod, lora_config_cls,
