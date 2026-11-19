@@ -40,6 +40,9 @@ def main():
     ap.add_argument("--sft-adapter", default=None)
     ap.add_argument("--train-file", default=None)
     ap.add_argument("--out-dir", default=None)
+    ap.add_argument("--gpu-mem-mib", type=int, default=None,
+                    help="显存上限（MiB）。默认 4600 是本地 6GB 卡的保守值；云端 >=24GB 卡请给 22000 左右，"
+                         "否则权重仍会被挤到 CPU，慢十倍（2026-11-19 加，云端 DPO 用）")
     a = ap.parse_args()
     smoke = a.smoke
     out_dir = CFG["smoke_output_dir"] if smoke else CFG["p2_output_dir"]
@@ -49,9 +52,12 @@ def main():
     if a.train_file: train_file = a.train_file
     if a.sft_adapter: sft_ad = a.sft_adapter
     set_seed(CFG["seed"])
+    # 云端（DPO_HF_ONLINE=1）要现下模型；本地默认断网隔离。先算，snapshot 要记这一项。
+    online = os.environ.get("DPO_HF_ONLINE") == "1"
     os.makedirs(out_dir, exist_ok=True)
     snap = dict(CFG); snap.update({"output_dir": out_dir, "train_file": train_file,
-        "sft_adapter": sft_ad, "mode": "smoke" if smoke else "p2"})
+        "sft_adapter": sft_ad, "mode": "smoke" if smoke else "p2",
+        "gpu_mem_mib": a.gpu_mem_mib or 4600, "hf_online": online})
     with open(os.path.join(out_dir, "cfg_snapshot.json"), "w", encoding="utf-8") as f:
         json.dump(snap, f, ensure_ascii=False, indent=2)
     print("[cfg] snapshot -> %s/cfg_snapshot.json" % out_dir)
@@ -64,10 +70,16 @@ def main():
     except Exception as e:
         print("[error] 缺依赖: %s" % e)
         return
-    for _v in ("http_proxy", "https_proxy", "all_proxy", "no_proxy",
-               "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
-        os.environ.pop(_v, None)
-    os.environ["HF_HUB_OFFLINE"] = "1"
+    # 本地跑：断网 + 去掉代理，避免半路去连 HF。云端（Kaggle 等）要现下模型，
+    # 用 DPO_HF_ONLINE=1 关掉这套隔离，否则会遇到 "offline mode is enabled" 直接死。
+    if online:
+        os.environ.pop("HF_HUB_OFFLINE", None)
+        print("[net] DPO_HF_ONLINE=1 → 允许 HF 下载（云端模式）")
+    else:
+        for _v in ("http_proxy", "https_proxy", "all_proxy", "no_proxy",
+                   "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
+            os.environ.pop(_v, None)
+        os.environ["HF_HUB_OFFLINE"] = "1"
     print("[model] load %s + SFT %s (4bit)" % (CFG["base_model"], sft_ad))
     bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
         bnb_4bit_use_double_quant=CFG["bnb_4bit_use_double_quant"], bnb_4bit_compute_dtype=torch.bfloat16)
@@ -76,7 +88,7 @@ def main():
         tok.pad_token = tok.eos_token
     model = AutoModelForCausalLM.from_pretrained(CFG["base_model"], quantization_config=bnb,
         device_map="auto", trust_remote_code=True,
-        max_memory={0: "4600MiB", "cpu": "12GiB"})  # P2：6GB卡DPO峰值超限，溢出几层到CPU（慢但不断）
+        max_memory={0: "%dMiB" % (a.gpu_mem_mib or 4600), "cpu": "12GiB"})  # 默认值对齐 6GB 卡（溢出到 CPU，慢但不断）
     model.gradient_checkpointing_enable()
     from peft import prepare_model_for_kbit_training
     model = prepare_model_for_kbit_training(model)
