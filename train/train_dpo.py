@@ -34,6 +34,21 @@ def set_seed(s):
     random.seed(s); np.random.seed(s)
 
 
+def pick_compute_dtype(capability, torch_mod):
+    """按 GPU 计算能力选 4bit 计算的累积精度，返回 torch dtype。
+
+    为什么不能写死 bf16（2026-11-19 云端实测）：
+        Kaggle T4 是 Turing（(7,5)），**硬件不支持 bfloat16**。脚本原来写死
+        `bnb_4bit_compute_dtype=torch.bfloat16`，训练第 2 步就
+        `CUDA error: an illegal memory access was encountered` —— 不是慢，是崩。
+        bf16 从 Ampere（8.0）才有；更老的卡保守用 fp16（V100/T4 都支持）。
+    capability=None（查询失败）时同样退 fp16：宁可慢一点，不要非法访存。
+    """
+    if capability and capability[0] >= 8:
+        return torch_mod.bfloat16
+    return torch_mod.float16
+
+
 def attach_trainable_adapter(model, sft_ad, *, peft_mod, lora_config_cls,
                              lora_r=16, lora_alpha=32, lora_dropout=0.05):
     """保证「模型上确实挂着可训练 adapter」，返回 (model, mode)。
@@ -110,8 +125,14 @@ def main():
             os.environ.pop(_v, None)
         os.environ["HF_HUB_OFFLINE"] = "1"
     print("[model] load %s + SFT %s (4bit)" % (CFG["base_model"], sft_ad))
+    try:
+        _cap = torch.cuda.get_device_capability()
+    except Exception:
+        _cap = None
+    _cdtype = pick_compute_dtype(_cap, torch)
+    print("[gpu] capability=%s compute_dtype=%s" % (_cap, _cdtype))
     bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=CFG["bnb_4bit_use_double_quant"], bnb_4bit_compute_dtype=torch.bfloat16)
+        bnb_4bit_use_double_quant=CFG["bnb_4bit_use_double_quant"], bnb_4bit_compute_dtype=_cdtype)
     tok = AutoTokenizer.from_pretrained(CFG["base_model"], trust_remote_code=True)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
