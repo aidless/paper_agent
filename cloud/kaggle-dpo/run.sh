@@ -18,7 +18,20 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 STAGE="$ROOT/paper_agent/cloud/kaggle-dpo"
 DS_SLUG="dsh-dpo-p0v2"
 KERNEL_SLUG="dsh-dpo-train"
+# Kaggle 的「账号 slug」与「API 用户名」是**两个不同的东西**：kaggle.json 里
+# username=liuzewen，但所有产物都落在 liuzewen123 下。dataset_sources 写错时
+# Kaggle 只打一行 "not valid dataset sources" 却照样把 kernel 提交成功。
+KAGGLE_ACCOUNT="${KAGGLE_ACCOUNT:-liuzewen123}"
+FULL_DS="$KAGGLE_ACCOUNT/$DS_SLUG"
+FULL_KERNEL="$KAGGLE_ACCOUNT/$KERNEL_SLUG"
 MODE="dry"
+
+# fail-closed：占位符没换就上传，Kaggle 会把 kernel 建到不存在的用户名下（或者更糟，
+# 撞上别人的 slug）。上传前先拒。
+if grep -q "PLACEHOLDER_USERNAME" "$STAGE/kernel/kernel-metadata.json" 2>/dev/null; then
+  echo "kernel-metadata.json 仍含 PLACEHOLDER_USERNAME —— 先把用户名填成真实值" >&2
+  exit 4
+fi
 
 case "${1:---dry-run}" in
   --dry-run) MODE="dry" ;;
@@ -52,22 +65,52 @@ case "$MODE" in
     cp "$ROOT/paper_agent/train/train_dpo.py" "$STAGE_DIR/"
     cp "$ROOT/paper_agent/reports/dpo_env_freeze.txt" "$STAGE_DIR/"
     cat > "$STAGE_DIR/dataset-metadata.json" <<JSON
-{"title": "dsh dpo p0v2", "id": "$(kaggle config view 2>/dev/null | awk -F': *' '/username/{print $2}')/$DS_SLUG",
+{"title": "dsh dpo p0v2", "id": "$FULL_DS",
  "licenses": [{"name": "other"}]}
 JSON
-    kaggle datasets create -p "$STAGE_DIR" --dir-mode zip || \
+    # 「已存在」不是错误：新建会报 title in use 且**退出码仍是 0**，`create || version`
+    # 这条经典写法因此静默不更新（2026-11-19 实测：kernel 真跑了旧脚本，130 秒后
+    # 还是同一个 ValueError）。显式先问存在性。
+    if kaggle datasets files "$FULL_DS" >/dev/null 2>&1; then
+      echo "数据集已存在 → 发新版本"
       kaggle datasets version -p "$STAGE_DIR" -m "update $(date +%F-%H%M)"
+    else
+      kaggle datasets create -p "$STAGE_DIR" --dir-mode zip
+    fi
+    # 回读校验：不看退出码，看字节数对不对得上（静默未更新是这套工具链的常态）
+    LOCAL_BYTES=$(wc -c < "$ROOT/paper_agent/train/train_dpo.py")
+    for _ in $(seq 1 30); do
+      REMOTE_BYTES=$(kaggle datasets files "$FULL_DS" 2>/dev/null | awk '$1=="train_dpo.py"{print $2}')
+      [ "${REMOTE_BYTES:-0}" = "$LOCAL_BYTES" ] && break
+      sleep 5
+    done
+    if [ "${REMOTE_BYTES:-0}" != "$LOCAL_BYTES" ]; then
+      echo "❌ 数据集里的 train_dpo.py 不是本地这一版（远端 ${REMOTE_BYTES:-?} B vs 本地 ${LOCAL_BYTES} B）" >&2
+      exit 6
+    fi
+    echo "✓ 数据集已更新（train_dpo.py ${LOCAL_BYTES} B）"
     echo "== 2. kernel =="
-    kaggle kernels push -p "$STAGE/kernel"
+    PUSH_LOG="$(mktemp)"
+    kaggle kernels push -p "$STAGE/kernel" 2>&1 | tee "$PUSH_LOG"
+    # 「账号 slug ≠ API 用户名」是 Kaggle 的常态（本次实测：config 里 username=liuzewen，
+    # 但所有产物都落在 liuzewen123 下）。dataset_sources 写错时 Kaggle 只打一行
+    # "not valid dataset sources"，kernel 照样「成功」提交 —— 然后在云端因为没有
+    # /kaggle/input 直接失败。所以这里必须自己判红。
+    if grep -q "not valid dataset sources" "$PUSH_LOG"; then
+      echo "❌ kernel 的 dataset_sources 无效（账号 slug 与 API 用户名不一致）" >&2
+      echo "   用 kaggle datasets list -m 或页面 URL 读出真实 slug，写进 kernel-metadata.json" >&2
+      rm -f "$PUSH_LOG"; exit 5
+    fi
+    rm -f "$PUSH_LOG"
     echo "已提交。用 --status 看进度，--fetch 拉产物。"
     ;;
   status)
-    kaggle kernels status "$(kaggle config view 2>/dev/null | awk -F': *' '/username/{print $2}')/$KERNEL_SLUG"
+    kaggle kernels status "$FULL_KERNEL"
     ;;
   fetch)
     OUT="$ROOT/paper_agent/outputs/dpo-kaggle"
     mkdir -p "$OUT"
-    kaggle kernels output "$(kaggle config view 2>/dev/null | awk -F': *' '/username/{print $2}')/$KERNEL_SLUG" -p "$OUT"
+    kaggle kernels output "$FULL_KERNEL" -p "$OUT"
     echo "产物落在 $OUT"
     ;;
 esac

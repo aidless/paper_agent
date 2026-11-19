@@ -33,6 +33,35 @@ CFG = {
 def set_seed(s):
     random.seed(s); np.random.seed(s)
 
+
+def attach_trainable_adapter(model, sft_ad, *, peft_mod, lora_config_cls,
+                             lora_r=16, lora_alpha=32, lora_dropout=0.05):
+    """保证「模型上确实挂着可训练 adapter」，返回 (model, mode)。
+
+    为什么必须有这一步（2026-11-19 云端实测）：
+        4bit 量化基座自己没有任何可训练参数。旧实现在 SFT adapter 缺失时只打一行
+        `[warn] SFT adapter缺失, 从基座直做DPO` 就继续，于是 DPOTrainer 在跑起来
+        130 秒后抛 `ValueError: You cannot perform fine-tuning on purely quantized
+        models. Please attach trainable adapters on top of the quantized model ...`。
+        「知道条件不满足还继续」= 假绿，和 `audit` 把「无法核对」当「不一致」是同一类病。
+
+    两条路径：
+        - 有 SFT adapter（目录里有 adapter_config.json）→ 续训它（resume_sft），
+          并显式解冻 lora_ 参数（量化基座 + adapter 载入后默认仍是冻结的）。
+        - 没有 → 现建一个 LoRA（fresh_lora），target_modules 覆盖 7 个投影层。
+    """
+    ad_cfg = os.path.join(sft_ad, "adapter_config.json") if sft_ad else ""
+    if ad_cfg and os.path.exists(ad_cfg):
+        model = peft_mod.PeftModel.from_pretrained(model, sft_ad, is_trainable=True)
+        for name, param in model.named_parameters():
+            if "lora_" in name:
+                param.requires_grad = True
+        return model, "resume_sft"
+    lora_cfg = lora_config_cls(r=lora_r, lora_alpha=lora_alpha, lora_dropout=lora_dropout,
+                               target_modules=list(CFG["target_modules"]),
+                               task_type="CAUSAL_LM")
+    return peft_mod.get_peft_model(model, lora_cfg), "fresh_lora"
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--smoke", action="store_true")
@@ -64,7 +93,7 @@ def main():
     try:
         import torch
         from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-        from peft import PeftModel
+        import peft
         from trl import DPOTrainer, DPOConfig
         from datasets import load_dataset
     except Exception as e:
@@ -92,15 +121,12 @@ def main():
     model.gradient_checkpointing_enable()
     from peft import prepare_model_for_kbit_training
     model = prepare_model_for_kbit_training(model)
-    if os.path.exists(os.path.join(sft_ad, "adapter_config.json")):
-        model = PeftModel.from_pretrained(model, sft_ad, is_trainable=True)
-        # 量化基座+载入adapter后，显式解冻LoRA参数（否则DPOTrainer报无可训练参数）
-        for n, p in model.named_parameters():
-            if "lora_" in n:
-                p.requires_grad = True
-        print("[sft] adapter attached+unfrozen: %s" % sft_ad)
-    else:
-        print("[warn] SFT adapter缺失, 从基座直做DPO: %s" % sft_ad)
+    model, mode = attach_trainable_adapter(model, sft_ad, peft_mod=peft, lora_config_cls=peft.LoraConfig)
+    print("[adapter] mode=%s (sft_adapter=%s)" % (mode, sft_ad))
+    n_train = sum(1 for _, p in model.named_parameters() if p.requires_grad)
+    if n_train == 0:
+        raise RuntimeError("挂完 adapter 仍无任何可训练参数 —— 量化基座下 DPOTrainer 一定拒跑")
+    print("[adapter] trainable tensors=%d" % n_train)
     ds = load_dataset("json", data_files=train_file)["train"]
     print("[data] pairs=%d" % len(ds))
     args = DPOConfig(

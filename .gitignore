@@ -37,3 +37,6 @@ Thumbs.db
 
 # 日志（可能含本机绝对路径）
 *.log
+
+# Kaggle 上传暂存目录（每次 --push 由 run.sh 生成，内容是 data/ + train/ 的副本）
+cloud/kaggle-dpo/dataset/

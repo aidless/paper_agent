@@ -1,5 +1,5 @@
 {
- "id": "PLACEHOLDER_USERNAME/dsh-dpo-train",
+ "id": "liuzewen123/dsh-dpo-train",
  "title": "dsh dpo train",
  "code_file": "dpo-kernel.py",
  "language": "python",
@@ -7,7 +7,9 @@
  "is_private": true,
  "enable_gpu": true,
  "enable_internet": true,
- "dataset_sources": ["PLACEHOLDER_USERNAME/dsh-dpo-p0v2"],
+ "dataset_sources": [
+  "liuzewen123/dsh-dpo-p0v2"
+ ],
  "competition_sources": [],
  "kernel_sources": []
 }
