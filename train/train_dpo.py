@@ -53,6 +53,36 @@ def pick_compute_dtype(capability, torch_mod):
     return torch_mod.float32
 
 
+def load_plan(capability, force_quant=None):
+    """决定「要不要 4bit 量化」以及用什么 dtype，返回 dict。
+
+    为什么老卡必须绕开 bnb（2026-11-19 云端三次真跑）：
+        Kaggle T4（Turing, (7,5)）上 4bit 量化 + LoRA 反传三次崩，而且三个 dtype 全崩：
+          - bnb_4bit_compute_dtype=bfloat16 → `CUDA error: an illegal memory access`
+          - 改 float16 → `CUBLAS_STATUS_NOT_SUPPORTED ... cublasGemmEx`
+            （栈在 bitsandbytes/backends/cuda/ops.py 的 `_dequant_linear_fallback`）
+          - 改 float32 → 仍然是 `illegal memory access`，这次崩在
+            transformers/integrations/sdpa_attention.py 的 scaled_dot_product_attention
+        共同项是 bnb 的 4bit 反传路径。所以 capability < 8 时**不量化**：
+        4B 模型 fp16 权重 8GB，T4 有 16GB，LoRA + bs=1 + max_len=384 装得下。
+
+    force_quant=True/False 供排查用；None = 按能力自动。
+    """
+    if force_quant is True:
+        return {"use_4bit": True,
+                "dtype": "bfloat16" if capability and capability[0] >= 8 else "float16",
+                "reason": "显式要求 4bit"}
+    if force_quant is False:
+        return {"use_4bit": False,
+                "dtype": "bfloat16" if capability and capability[0] >= 8 else "float16",
+                "reason": "显式关闭 4bit"}
+    if capability and capability[0] >= 8:
+        return {"use_4bit": True, "dtype": "bfloat16",
+                "reason": "Ampere+ 支持 bf16，4bit 省显存且已验证可用"}
+    return {"use_4bit": False, "dtype": "float16",
+            "reason": "老卡（capability<8）上 4bit 反传实测非法访存，改用非量化 fp16 权重"}
+
+
 def attach_trainable_adapter(model, sft_ad, *, peft_mod, lora_config_cls,
                              lora_r=16, lora_alpha=32, lora_dropout=0.05):
     """保证「模型上确实挂着可训练 adapter」，返回 (model, mode)。
@@ -88,6 +118,10 @@ def main():
     ap.add_argument("--sft-adapter", default=None)
     ap.add_argument("--train-file", default=None)
     ap.add_argument("--out-dir", default=None)
+    ap.add_argument("--no-4bit", action="store_true",
+                    help="强制不做 4bit 量化（老卡排查用；默认按 capability 自动决定）")
+    ap.add_argument("--4bit", dest="four_bit", action="store_true",
+                    help="强制 4bit 量化（默认按 capability 自动决定）")
     ap.add_argument("--gpu-mem-mib", type=int, default=None,
                     help="显存上限（MiB）。默认 4600 是本地 6GB 卡的保守值；云端 >=24GB 卡请给 22000 左右，"
                          "否则权重仍会被挤到 CPU，慢十倍（2026-11-19 加，云端 DPO 用）")
@@ -128,24 +162,40 @@ def main():
                    "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
             os.environ.pop(_v, None)
         os.environ["HF_HUB_OFFLINE"] = "1"
-    print("[model] load %s + SFT %s (4bit)" % (CFG["base_model"], sft_ad))
     try:
         _cap = torch.cuda.get_device_capability()
     except Exception:
         _cap = None
+    _force = None
+    if a.no_4bit:
+        _force = False
+    elif a.four_bit:
+        _force = True
+    plan = load_plan(_cap, _force)
     _cdtype = pick_compute_dtype(_cap, torch)
     print("[gpu] capability=%s compute_dtype=%s" % (_cap, _cdtype))
-    bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=CFG["bnb_4bit_use_double_quant"], bnb_4bit_compute_dtype=_cdtype)
+    print("[plan] use_4bit=%s dtype=%s reason=%s" % (plan["use_4bit"], plan["dtype"], plan["reason"]))
+    print("[model] load %s + SFT %s (%s)" % (CFG["base_model"], sft_ad,
+          "4bit" if plan["use_4bit"] else plan["dtype"]))
     tok = AutoTokenizer.from_pretrained(CFG["base_model"], trust_remote_code=True)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
-    model = AutoModelForCausalLM.from_pretrained(CFG["base_model"], quantization_config=bnb,
-        device_map="auto", trust_remote_code=True,
-        max_memory={0: "%dMiB" % (a.gpu_mem_mib or 4600), "cpu": "12GiB"})  # 默认值对齐 6GB 卡（溢出到 CPU，慢但不断）
-    model.gradient_checkpointing_enable()
-    from peft import prepare_model_for_kbit_training
-    model = prepare_model_for_kbit_training(model)
+    _max_mem = {0: "%dMiB" % (a.gpu_mem_mib or 4600), "cpu": "12GiB"}
+    if plan["use_4bit"]:
+        bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=CFG["bnb_4bit_use_double_quant"], bnb_4bit_compute_dtype=_cdtype)
+        model = AutoModelForCausalLM.from_pretrained(CFG["base_model"], quantization_config=bnb,
+            device_map="auto", trust_remote_code=True, max_memory=_max_mem)
+        model.gradient_checkpointing_enable()
+        from peft import prepare_model_for_kbit_training
+        model = prepare_model_for_kbit_training(model)
+    else:
+        # 非量化路径：fp16/bf16 权重直接上卡（老卡 4bit 反传不可用，见 load_plan 注释）
+        _wdt = torch.bfloat16 if plan["dtype"] == "bfloat16" else torch.float16
+        model = AutoModelForCausalLM.from_pretrained(CFG["base_model"], torch_dtype=_wdt,
+            device_map="auto", trust_remote_code=True, max_memory=_max_mem)
+        model.gradient_checkpointing_enable()
+        model.config.use_cache = False
     model, mode = attach_trainable_adapter(model, sft_ad, peft_mod=peft, lora_config_cls=peft.LoraConfig)
     print("[adapter] mode=%s (sft_adapter=%s)" % (mode, sft_ad))
     n_train = sum(1 for _, p in model.named_parameters() if p.requires_grad)

@@ -67,3 +67,37 @@ class TestCallSiteUsesCapability(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestLoadPlan(unittest.TestCase):
+    """4bit 量化 + LoRA 在 T4 上三次崩（bf16/fp16/fp32 都崩），故老卡直接走非量化 fp16。"""
+
+    def test_ampere及以上仍走4bit_bf16(self):
+        plan = train_dpo.load_plan((8, 6))
+        self.assertTrue(plan["use_4bit"])
+        self.assertEqual(plan["dtype"], "bfloat16")
+
+    def test_turing不走4bit且用fp16(self):
+        plan = train_dpo.load_plan((7, 5))
+        self.assertFalse(plan["use_4bit"], "T4 上 4bit 反传实测非法访存，必须绕开 bnb")
+        self.assertEqual(plan["dtype"], "float16")
+        self.assertIn("4bit", plan["reason"])
+
+    def test_可强制要求4bit(self):
+        plan = train_dpo.load_plan((7, 5), force_quant=True)
+        self.assertTrue(plan["use_4bit"])
+
+    def test_可强制关闭4bit(self):
+        plan = train_dpo.load_plan((9, 0), force_quant=False)
+        self.assertFalse(plan["use_4bit"])
+        self.assertEqual(plan["dtype"], "bfloat16")
+
+    def test_能力未知时保守不量化(self):
+        plan = train_dpo.load_plan(None)
+        self.assertFalse(plan["use_4bit"])
+        self.assertEqual(plan["dtype"], "float16")
+
+    def test_main按计划分支(self):
+        src = inspect.getsource(train_dpo.main)
+        self.assertIn("load_plan(", src)
+        self.assertIn('plan["use_4bit"]', src)
