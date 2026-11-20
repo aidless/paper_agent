@@ -45,6 +45,24 @@ class TestDpoMemoryPeak(unittest.TestCase):
         self.assertIn("PYTORCH_CUDA_ALLOC_CONF", src)
         self.assertIn("expandable_segments:True", src)
 
+    def test_peft下预计算ref_logps省掉训练步第二次前向(self):
+        """TRL 1.13 dpo_trainer.py:920/1402：PEFT 下 ref_model=None，
+        precompute_ref_log_probs=True 把 ref logps 在训练前 no_grad 缓存进 dataset，
+        训练步直接读，不再叠第二组 chosen/rejected 前向的激活（v8/v9 OOM 的 6GB 来源）。
+        旧注释「True 会另载一份 ref 模型」是错的——PEFT 下根本不另载。
+        """
+        src = inspect.getsource(train_dpo.main)
+        self.assertIn("precompute_ref_log_probs=True", src)
+
+    def test_frozen基座必须开启输入求梯度(self):
+        """PEFT + gradient_checkpointing 的硬要求：frozen 基座输出不 requires_grad 时，
+        checkpointed block 的反向不会重算，检查点**静默失效**、激活全留在图里。
+        必须调 model.enable_input_require_grads()。v9 只改了 use_reentrant 没调它，
+        结果一点显存都没省（14.21 GiB 与 v8 的 14.19 GiB 基本一致）。
+        """
+        src = inspect.getsource(train_dpo.main)
+        self.assertIn("enable_input_require_grads()", src)
+
     def test_精度旋钮没被动过(self):
         """OOM 不是精度问题，bf16/fp16 的既有判据不许被本次改动顺带改掉。"""
         self.assertIs(train_dpo.pick_compute_dtype((7, 5), _TF()), _TF().float32)

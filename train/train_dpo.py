@@ -195,6 +195,10 @@ def main():
         model = AutoModelForCausalLM.from_pretrained(CFG["base_model"], torch_dtype=_wdt,
             device_map="auto", trust_remote_code=True, max_memory=_max_mem)
         model.gradient_checkpointing_enable()
+        # PEFT + gradient_checkpointing 的硬要求：frozen 基座的输出不 requires_grad 时，
+        # checkpointed block 反向不重算、检查点**静默失效**（v9 只改 use_reentrant 一点没省）。
+        # 必须让输入 requires_grad，激活才会真正分段重算。
+        model.enable_input_require_grads()
         model.config.use_cache = False
     model, mode = attach_trainable_adapter(model, sft_ad, peft_mod=peft, lora_config_cls=peft.LoraConfig)
     print("[adapter] mode=%s (sft_adapter=%s)" % (mode, sft_ad))
@@ -210,7 +214,11 @@ def main():
         gradient_accumulation_steps=CFG["grad_accum"], learning_rate=CFG["lr"],
         num_train_epochs=1, max_steps=10 if smoke else -1,
         max_length=384,  # P2省显存：偏好对实测最长363token（2026-09复核），384零截断
-        precompute_ref_log_probs=False,  # P2省显存：True会另载一份ref模型，双倍权重必爆；False走adapter-disable共享基座
+        # PEFT 下 ref_model=None（TRL dpo_trainer.py:920），不会另载 ref 权重；
+        # True 让 ref logps 在训练前 no_grad 缓存进 dataset（:1141-1215），
+        # 训练步直接读（:1402），不再叠第二组 chosen/rejected 前向的激活。
+        # 旧注释「True 会另载一份 ref 模型，双倍权重必爆」是错的（v8/v9 OOM 根因）。
+        precompute_ref_log_probs=True,
         logging_steps=CFG["logging_steps"], save_steps=CFG["save_steps"],
         seed=CFG["seed"], report_to="none",
         save_total_limit=CFG["save_total_limit"], gradient_checkpointing=True,
