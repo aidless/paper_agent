@@ -232,6 +232,20 @@ def main():
     except TypeError:
         trainer = DPOTrainer(model=model, ref_model=None, args=args,
                              train_dataset=ds, tokenizer=tok)
+    # v8/v9/v10 三次 OOM 缺口仅 20/48/48 MiB，reserved-but-unallocated 约 115 MiB；
+    # precompute 跑完 400 条后到训练前留下一段 allocator 碎片。训练前回收 + 记录构成，
+    # 只降碎片不改精度。无论本跑成败，这组读数都能定位 14.23 GiB 的去向。
+    try:
+        import torch as _torch
+        _alloc = _torch.cuda.memory_allocated() / 1024 ** 3
+        _reserved = _torch.cuda.memory_reserved() / 1024 ** 3
+        print("[mem] before train: allocated=%.3f GiB reserved=%.3f GiB" %
+              (_alloc, _reserved))
+        _torch.cuda.empty_cache()
+        print("[mem] after empty_cache: reserved=%.3f GiB" %
+              (_torch.cuda.memory_reserved() / 1024 ** 3))
+    except Exception as _e:
+        print("[mem] 诊断跳过: %s" % _e)
     trainer.train()
     model.save_pretrained(out_dir)
     tok.save_pretrained(out_dir)

@@ -63,6 +63,22 @@ class TestDpoMemoryPeak(unittest.TestCase):
         src = inspect.getsource(train_dpo.main)
         self.assertIn("enable_input_require_grads()", src)
 
+    def test_train前清空precompute残留的显存碎片(self):
+        """v8/v9/v10 三次 OOM 缺口仅 20/48/48 MiB，reserved-but-unallocated 约 115 MiB，
+        且 precompute 已跑完 400/400。训练前 empty_cache 可回收这段碎片直接补缺口，
+        完全不碰精度（v10 OOM 文本自己建议的 PYTORCH_CUDA_ALLOC_CONF 指向同一方向）。
+        必须在 trainer.train() 之前。
+        """
+        src = inspect.getsource(train_dpo.main)
+        self.assertIn("torch.cuda.empty_cache()", src)
+        self.assertLess(src.index("torch.cuda.empty_cache()"), src.index("trainer.train()"))
+
+    def test_train前打印显存构成诊断(self):
+        """无论 v11 成功与否，下一跑都要能看清 14.23 GiB 的构成。"""
+        src = inspect.getsource(train_dpo.main)
+        self.assertIn("memory_allocated", src)
+        self.assertIn("memory_reserved", src)
+
     def test_精度旋钮没被动过(self):
         """OOM 不是精度问题，bf16/fp16 的既有判据不许被本次改动顺带改掉。"""
         self.assertIs(train_dpo.pick_compute_dtype((7, 5), _TF()), _TF().float32)
