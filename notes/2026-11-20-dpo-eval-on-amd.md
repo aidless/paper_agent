@@ -46,8 +46,37 @@ EVAL_BASE_MODEL=/workspace/models/Qwen3-4B EVAL_LOAD_4BIT=0 PYTORCH_ALLOC_CONF=e
   data/sft_p0_val.jsonl reports/eval_3way_p2.json
 ```
 
+## 读数（AMD 48GB / bf16 / 2026-11-20 08:35 远端时钟）
+
+| 模型 | val NLL(60) | tag | stage | evd | distinct-2 | loop | 平均长度 |
+|---|---|---|---|---|---|---|---|
+| base | 4.3935 | 0.00 | 0.875 | 0.25 | 0.5318 | 6 | 603 |
+| ckpt136（SFT/p1v2） | 2.8648 | 0.00 | 0.75 | 0.75 | 0.5092 | 6 | 282 |
+| tmlr-qwen3-4b-p2（DPO） | **2.7079** | 0.00 | 0.75 | 0.75 | **0.5592** | **3** | 303 |
+
+## 判定（机械执行，不是口头对照）
+
+`eval/judge_p2.py reports/eval_3way_p2.json` → **exit 0，4/4**：
+
+```
+PASS  val NLL 不退化        候选=2.7079  基线=2.8648 (le)
+PASS  证据绑定率不退化      候选=0.75    基线=0.75   (ge)
+PASS  distinct-2 不下降    候选=0.5592  基线=0.5092 (ge)
+PASS  循环复读不增加        候选=3       基线=6      (le)
+```
+
+判决写入 `reports/eval_3way_p2.verdict.json`。
+
+**结论：DPO 在 SFT 之上有正收益。** NLL 降 5.5%（2.8648→2.7079）、distinct-2 升 9.8%、循环复读从 6 降到 3（8 条生成里少 3 条），证据绑定率持平在 0.75。
+
+## 必须一起读的三条边界
+
+1. **生成样本只有 8 条**，evd/d2/loop 都是这 8 条上的计数。evd 0.75 = 6/8、loop 3 = 3/8，**一个样本翻转就是 12.5 个百分点**。这三条只能当方向性信号，不能当「d2 提升 9.8%」这种精确断言引用。只有 NLL 是 60 条样本。
+2. **NLL 绝对值不可与历史 `eval_3way_v2.md` 比**（那是 bnb 4bit 读数，本轮 bf16 全量）。本轮内三方同 substrate，相对关系可用。
+3. **stage 从 base 的 0.875 掉到两个微调版的 0.75** —— 这条不在四条判据里，但也不能不提：两个 adapter 都牺牲了一点内容阶段符合率，且 DPO 没有把它补回来。base 的平均长度 603 vs 282/303 说明 base 输出更长，可能因此更容易命中阶段关键词，这个对比本身不干净。
+
 ## 验收
-- `pytest tests/ -q` → 48 passed
-- `py_compile eval/eval_3way.py eval/eval_config.py` → OK
-- `ruff check --select F,E9 eval/eval_3way.py eval/eval_config.py` → All checks passed
-- 评测结果待回填（本轮结果出来后在报告节补读数，判据不改）
+- `pytest tests/ -q` → **63 passed**（15 条 judge_p2 + 14 条 eval_config + 34 条既有）
+- 四条判据的变异反证：M1 判据恒过 → 3 failed；M2 方向反了 → 7 failed；M3 缺字段静默为 0 → 1 failed；M5 结构错当通过 → RED。**M4 曾假绿**（把 JSON 解析错误当通过），补 `test_cli_缺字段返回2` 后 M5 才真红 —— 记录在此：只测「坏 JSON」测不出「坏结构」。
+- `ruff check --select F,E9` → All checks passed
+- `python3 eval/judge_p2.py reports/eval_3way_p2.json` → exit 0，4/4

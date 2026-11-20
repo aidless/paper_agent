@@ -1,0 +1,33 @@
+{
+  "rows": [
+    {
+      "criterion": "val NLL 不退化",
+      "candidate": 2.7079,
+      "baseline": 2.8648,
+      "direction": "le",
+      "passed": true
+    },
+    {
+      "criterion": "证据绑定率不退化",
+      "candidate": 0.75,
+      "baseline": 0.75,
+      "direction": "ge",
+      "passed": true
+    },
+    {
+      "criterion": "distinct-2 不下降",
+      "candidate": 0.5592,
+      "baseline": 0.5092,
+      "direction": "ge",
+      "passed": true
+    },
+    {
+      "criterion": "循环复读不增加",
+      "candidate": 3,
+      "baseline": 6,
+      "direction": "le",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

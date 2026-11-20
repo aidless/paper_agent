@@ -1,0 +1,239 @@
+{
+  "base": {
+    "val_nll_60": 4.3935,
+    "gen": {
+      "tag": 0.0,
+      "evd": 0.25,
+      "stage": 0.875,
+      "d2": 0.5318,
+      "loop": 6,
+      "len": 603
+    },
+    "gen_detail": [
+      {
+        "tag": false,
+        "evd": false,
+        "stage": true,
+        "d2": 0.5413,
+        "loop": false,
+        "len": 570
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "stage": true,
+        "d2": 0.7249,
+        "loop": false,
+        "len": 339
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "stage": true,
+        "d2": 0.5287,
+        "loop": true,
+        "len": 489
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "stage": true,
+        "d2": 0.6049,
+        "loop": true,
+        "len": 454
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "stage": true,
+        "d2": 0.5424,
+        "loop": true,
+        "len": 484
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "stage": true,
+        "d2": 0.7589,
+        "loop": true,
+        "len": 449
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.2908,
+        "loop": true,
+        "len": 1036
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": false,
+        "d2": 0.2624,
+        "loop": true,
+        "len": 1007
+      }
+    ]
+  },
+  "ckpt136": {
+    "val_nll_60": 2.8648,
+    "gen": {
+      "tag": 0.0,
+      "evd": 0.75,
+      "stage": 0.75,
+      "d2": 0.5092,
+      "loop": 6,
+      "len": 282
+    },
+    "gen_detail": [
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.6657,
+        "loop": true,
+        "len": 357
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.7547,
+        "loop": false,
+        "len": 266
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "stage": false,
+        "d2": 0.005,
+        "loop": true,
+        "len": 200
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.787,
+        "loop": true,
+        "len": 278
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.8242,
+        "loop": false,
+        "len": 257
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "stage": false,
+        "d2": 0.005,
+        "loop": true,
+        "len": 200
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.6076,
+        "loop": true,
+        "len": 289
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.4244,
+        "loop": true,
+        "len": 411
+      }
+    ]
+  },
+  "tmlr-qwen3-4b-p2": {
+    "val_nll_60": 2.7079,
+    "gen": {
+      "tag": 0.0,
+      "evd": 0.75,
+      "stage": 0.75,
+      "d2": 0.5592,
+      "loop": 3,
+      "len": 303
+    },
+    "gen_detail": [
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.7047,
+        "loop": false,
+        "len": 404
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.8533,
+        "loop": false,
+        "len": 260
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "stage": false,
+        "d2": 0.005,
+        "loop": true,
+        "len": 200
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.8361,
+        "loop": false,
+        "len": 361
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.8489,
+        "loop": false,
+        "len": 279
+      },
+      {
+        "tag": false,
+        "evd": false,
+        "stage": false,
+        "d2": 0.005,
+        "loop": true,
+        "len": 200
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.7157,
+        "loop": false,
+        "len": 307
+      },
+      {
+        "tag": false,
+        "evd": true,
+        "stage": true,
+        "d2": 0.5049,
+        "loop": true,
+        "len": 413
+      }
+    ]
+  },
+  "_meta": {
+    "AD68": "outputs/tmlr-qwen3-4b-p1v2/checkpoint-136",
+    "AD270": "outputs/tmlr-qwen3-4b-p2",
+    "VAL": "data/sft_p0_val.jsonl",
+    "note": "键名由适配器路径派生；NLL同一样本同掩码可比"
+  }
+}
