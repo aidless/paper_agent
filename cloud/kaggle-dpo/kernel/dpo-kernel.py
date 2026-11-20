@@ -26,6 +26,11 @@ print("== 依赖 ==")
 subprocess.run([sys.executable, "-m", "pip", "install", "-q",
                 "torch", "transformers==4.57.6", "trl==1.13.0", "peft==0.20.0",
                 "bitsandbytes==0.50.2", "datasets==4.8.5", "accelerate==1.15.0"], check=True)
+# Kaggle 镜像预装 torchao 0.10.0，而 peft 0.20 硬检查 >=0.16（import_utils.py:161），
+# 会在 get_peft_model 抛 ImportError。本方案走非量化 fp16，整条链路不消费 torchao；
+# 卸掉它让 peft 的 find_spec 返回 None（直接 False，不抛），比升级少一层版本连带。
+# 未安装时 pip uninstall 非 0，故不能 check=True。
+subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "torchao"], check=False)
 
 print("== 数据与脚本 ==")
 for name in ("dpo_p0v2.jsonl", "train_dpo.py"):
