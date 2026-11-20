@@ -8,10 +8,14 @@ for _v in ("http_proxy", "https_proxy", "all_proxy", "no_proxy",
            "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"):
     os.environ.pop(_v, None)
 os.environ["HF_HUB_OFFLINE"] = "1"
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
-BASE = "Qwen/Qwen3-4B"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from eval_config import resolve_base_model, use_4bit  # noqa: E402
+
+BASE = resolve_base_model(os.environ)
+LOAD_4BIT = use_4bit(os.environ)
 AD68 = sys.argv[1] if len(sys.argv) > 1 else "paper_agent/outputs/tmlr-qwen3-4b-p1/checkpoint-68"
 AD270 = sys.argv[2] if len(sys.argv) > 2 else "paper_agent/outputs/tmlr-qwen3-4b-p1"
 VAL = sys.argv[3] if len(sys.argv) > 3 else "paper_agent/data/sft_p0_val.jsonl"
@@ -31,7 +35,9 @@ perm = torch.randperm(len(val), generator=rng).tolist()
 nll_set = [val[i] for i in perm[:N_NLL]]
 gen_set = [val[i] for i in perm[N_NLL:N_NLL + N_GEN]]
 
-bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
+if LOAD_4BIT:
+    from transformers import BitsAndBytesConfig
+    bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
                          bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=torch.float16)
 
 def build_inputs(msgs):
@@ -47,9 +53,11 @@ def build_inputs(msgs):
     return ids, labels
 
 def load_model(kind):
+    load_kw = ({"quantization_config": bnb} if LOAD_4BIT
+               else {"torch_dtype": torch.bfloat16})
     m = AutoModelForCausalLM.from_pretrained(
-        BASE, quantization_config=bnb, device_map="auto",
-        trust_remote_code=True, attn_implementation="eager")
+        BASE, device_map="auto", trust_remote_code=True,
+        attn_implementation="eager", **load_kw)
     if kind == "ckpt68":
         m = PeftModel.from_pretrained(m, AD68)
     elif kind == "ckpt270":
