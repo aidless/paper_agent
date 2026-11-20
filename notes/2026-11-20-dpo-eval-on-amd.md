@@ -77,6 +77,6 @@ PASS  循环复读不增加        候选=3       基线=6      (le)
 
 ## 验收
 - `pytest tests/ -q` → **63 passed**（15 条 judge_p2 + 14 条 eval_config + 34 条既有）
-- 四条判据的变异反证：M1 判据恒过 → 3 failed；M2 方向反了 → 7 failed；M3 缺字段静默为 0 → 1 failed；M5 结构错当通过 → RED。**M4 曾假绿**（把 JSON 解析错误当通过），补 `test_cli_缺字段返回2` 后 M5 才真红 —— 记录在此：只测「坏 JSON」测不出「坏结构」。
+- 九条变异反证（全部 RED）：M1 判据恒过 → 3 failed；M2 方向反了 → 7 failed；M3 缺字段静默为 0 → 1 failed；M5 结构错当通过 → RED；M6 错误文案丢字段路径 → 1 failed；M7 布尔检查剥离 → 1 failed；M8 缺模型段不校验 → 1 failed；M9 少一条判据 → 7 failed。**M4 曾假绿**（把 JSON 解析错误当通过），补 `test_cli_缺字段返回2` 后 M5 才真红 —— 记录在此：只测「坏 JSON」测不出「坏结构」。
 - `ruff check --select F,E9` → All checks passed
 - `python3 eval/judge_p2.py reports/eval_3way_p2.json` → exit 0，4/4
