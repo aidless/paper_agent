@@ -12,7 +12,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from eval_config import resolve_base_model, use_4bit  # noqa: E402
+from eval_config import resolve_base_model, resolve_n_gen, resolve_seed, use_4bit  # noqa: E402
 
 BASE = resolve_base_model(os.environ)
 LOAD_4BIT = use_4bit(os.environ)
@@ -22,8 +22,8 @@ VAL = sys.argv[3] if len(sys.argv) > 3 else "paper_agent/data/sft_p0_val.jsonl"
 OUT_JSON = sys.argv[4] if len(sys.argv) > 4 else "paper_agent/reports/eval_3way.json"
 OUT_MD = OUT_JSON[:-5] + ".md" if OUT_JSON.endswith(".json") else OUT_JSON + ".md"
 N_NLL = 60
-N_GEN = 8
-SEED = 42
+N_GEN = resolve_n_gen(os.environ)
+SEED = resolve_seed(os.environ)
 
 tok = AutoTokenizer.from_pretrained(BASE, trust_remote_code=True)
 if tok.pad_token is None:

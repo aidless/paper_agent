@@ -33,3 +33,34 @@ def use_4bit(env: Mapping[str, str]) -> bool:
     if not raw:  # 未设置 / 空串 / 纯空白：都当「没传」，保持历史 4bit 口径
         return True
     return raw not in _FALSEY
+
+DEFAULT_N_GEN = 8
+DEFAULT_SEED = 42
+
+
+def _positive_int(env, key, default):
+    """读一个正整数配置：未设/空串回落 default，非正或非整数一律抛 ValueError。
+
+    存在理由：扩样本是要能调的，但「0 条」或「-8 条」不是配置而是错误，
+    静默返回 0 会让评测跑出一个分母为零的报告。
+    """
+    raw = (env.get(key) or "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        raise ValueError(f"{key} 必须是整数，收到 {raw!r}") from None
+    if value <= 0:
+        raise ValueError(f"{key} 必须是正整数，收到 {value}")
+    return value
+
+
+def resolve_n_gen(env: Mapping[str, str]) -> int:
+    """生成样本条数（EVAL_N_GEN）；默认 8 与历史报告同口径。"""
+    return _positive_int(env, "EVAL_N_GEN", DEFAULT_N_GEN)
+
+
+def resolve_seed(env: Mapping[str, str]) -> int:
+    """取样种子（EVAL_SEED）；默认 42 与历史报告同口径。"""
+    return _positive_int(env, "EVAL_SEED", DEFAULT_SEED)
