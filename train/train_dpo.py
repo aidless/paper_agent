@@ -214,6 +214,9 @@ def main():
         logging_steps=CFG["logging_steps"], save_steps=CFG["save_steps"],
         seed=CFG["seed"], report_to="none",
         save_total_limit=CFG["save_total_limit"], gradient_checkpointing=True,
+        # 非重入检查点：重入版在反向时重算，会把每层输入整段留在 autograd 图里；
+        # T4 非量化路径 DPO 四次前向的激活本来就把 14.5GB 塞满（v8 实测 OOM）。
+        gradient_checkpointing_kwargs={"use_reentrant": False},
     )
     try:
         trainer = DPOTrainer(model=model, ref_model=None, args=args,

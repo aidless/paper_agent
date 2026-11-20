@@ -32,6 +32,11 @@ subprocess.run([sys.executable, "-m", "pip", "install", "-q",
 # 未安装时 pip uninstall 非 0，故不能 check=True。
 subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "torchao"], check=False)
 
+# v8 非量化路径 DPO 在 backward 时 OOM（14.19/14.56 GiB 被 PyTorch 占满）；
+# OOM 文本自己建议 expandable_segments 治碎片，成本为零。必须在训练子进程
+# fork 之前设，才能传进 train_dpo.py。
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 print("== 数据与脚本 ==")
 for name in ("dpo_p0v2.jsonl", "train_dpo.py"):
     src = os.path.join(DS, name)
