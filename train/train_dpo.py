@@ -34,6 +34,17 @@ def set_seed(s):
     random.seed(s); np.random.seed(s)
 
 
+def resolve_base_model(env) -> str:
+    """模型来源：默认 HF repo id，`DPO_BASE_MODEL` 可指向已下载的本地目录。
+
+    为什么需要：AMD Radeon 云实例上 huggingface_hub 的 resolve/HEAD 请求会卡死
+    （2026-11-19 实测僵 16 小时，缓存只落 28K），而同一条链路用 curl 带集群代理
+    能到 6.4MB/s。于是先把权重 curl 到本地，再让训练脚本读本地路径，绕开 hub 网络层。
+    """
+    v = (env or {}).get("DPO_BASE_MODEL") or ""
+    return v.strip() or CFG["base_model"]
+
+
 def pick_compute_dtype(capability, torch_mod):
     """按 GPU 计算能力选 4bit 计算的累积精度，返回 torch dtype。
 
@@ -136,9 +147,11 @@ def main():
     set_seed(CFG["seed"])
     # 云端（DPO_HF_ONLINE=1）要现下模型；本地默认断网隔离。先算，snapshot 要记这一项。
     online = os.environ.get("DPO_HF_ONLINE") == "1"
+    base_model = resolve_base_model(os.environ)
     os.makedirs(out_dir, exist_ok=True)
     snap = dict(CFG); snap.update({"output_dir": out_dir, "train_file": train_file,
         "sft_adapter": sft_ad, "mode": "smoke" if smoke else "p2",
+        "base_model": base_model,
         "gpu_mem_mib": a.gpu_mem_mib or 4600, "hf_online": online})
     with open(os.path.join(out_dir, "cfg_snapshot.json"), "w", encoding="utf-8") as f:
         json.dump(snap, f, ensure_ascii=False, indent=2)
@@ -175,16 +188,16 @@ def main():
     _cdtype = pick_compute_dtype(_cap, torch)
     print("[gpu] capability=%s compute_dtype=%s" % (_cap, _cdtype))
     print("[plan] use_4bit=%s dtype=%s reason=%s" % (plan["use_4bit"], plan["dtype"], plan["reason"]))
-    print("[model] load %s + SFT %s (%s)" % (CFG["base_model"], sft_ad,
+    print("[model] load %s + SFT %s (%s)" % (base_model, sft_ad,
           "4bit" if plan["use_4bit"] else plan["dtype"]))
-    tok = AutoTokenizer.from_pretrained(CFG["base_model"], trust_remote_code=True)
+    tok = AutoTokenizer.from_pretrained(base_model, trust_remote_code=True)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
     _max_mem = {0: "%dMiB" % (a.gpu_mem_mib or 4600), "cpu": "12GiB"}
     if plan["use_4bit"]:
         bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
             bnb_4bit_use_double_quant=CFG["bnb_4bit_use_double_quant"], bnb_4bit_compute_dtype=_cdtype)
-        model = AutoModelForCausalLM.from_pretrained(CFG["base_model"], quantization_config=bnb,
+        model = AutoModelForCausalLM.from_pretrained(base_model, quantization_config=bnb,
             device_map="auto", trust_remote_code=True, max_memory=_max_mem)
         model.gradient_checkpointing_enable()
         from peft import prepare_model_for_kbit_training
@@ -192,7 +205,7 @@ def main():
     else:
         # 非量化路径：fp16/bf16 权重直接上卡（老卡 4bit 反传不可用，见 load_plan 注释）
         _wdt = torch.bfloat16 if plan["dtype"] == "bfloat16" else torch.float16
-        model = AutoModelForCausalLM.from_pretrained(CFG["base_model"], torch_dtype=_wdt,
+        model = AutoModelForCausalLM.from_pretrained(base_model, torch_dtype=_wdt,
             device_map="auto", trust_remote_code=True, max_memory=_max_mem)
         model.gradient_checkpointing_enable()
         # PEFT + gradient_checkpointing 的硬要求：frozen 基座的输出不 requires_grad 时，
